@@ -87,7 +87,11 @@ function carregarCSV() {
 function processarCSV(texto) {
   const linhas = texto.split("\n").map(l => l.trim()).filter(l => l);
 
-  cabecalhos = linhas[0].split(";");
+  // Remove BOM e divide corretamente o cabeçalho
+cabecalhos = linhas[0]
+    .replace(/^\uFEFF/, '') // remove caractere BOM
+    .split(";");
+
   linhas.shift(); // remove a linha do cabeçalho
 
   dadosCSV = linhas.map(linha => {
