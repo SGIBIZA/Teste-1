@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Metas N3</title>
+
+  <!-- se tiver um styles.css geral, mantém; se não, pode tirar essa linha -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- PapaParse (mesmo esquema das outras páginas) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"
+          integrity="sha512-0JfUYgI/H3Jg6F1TM8pZ2Gz98w0OaPgf7ETfPRxLQWX/yCqc9H0WsOwNvO1A7dWivMRM4XxS9Q/GXeqLkE3p3g=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <style>
+    body {
+      background-color: #ffffff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-top: 20px;
+      font-size: 28px;
+      color: #000;
+    }
+
+    /* Filtros */
+    .filtros {
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+
+    .filtros select {
+      padding: 10px;
+      margin: 5px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    /* Grid de cards */
+    #cards-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+      padding: 20px;
+    }
+
+    /* Card */
+    .card {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+      text-align: left;
+      position: relative;
+    }
+
+    .card h2 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .card p {
+      margin: 6px 0;
+      font-size: 14px;
+    }
+
+    /* Farol */
+    .farol {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      position: absolute;
+      right: 20px;
+      top: 20px;
+    }
+
+    .verde   { background-color: #2ecc71; }
+    .amarelo { background-color: #F8AD1E; }
+    .vermelho{ background-color: #e74c3c; }
+  </style>
+</head>
+<body>
+
+  <h1>Painel de Metas N3</h1>
+
+  <div class="filtros">
+    <select id="filtroMes"></select>
+    <select id="filtroAno"></select>
+  </div>
+
+  <div id="cards-container"></div>
+
+  <script>
+    // Caminho do CSV (mesma pasta do HTML)
+    const csvFile = "base_n3.csv";
+
+    let dadosCSV = [];
+
+    // mês/ano padrão = mês anterior ao atual
+    const hoje = new Date();
+    let anoAtual = hoje.getFullYear();
+    let indiceMesAnterior = hoje.getMonth() - 1; // 0 = Jan
+
+    if (indiceMesAnterior < 0) {
+      indiceMesAnterior = 11; // Dezembro
+      anoAtual = anoAtual - 1;
+    }
+
+    const nomesMes = [
+      "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+      "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
+    ];
+
+    // --- Cor do farol pela coluna Status ---
+    function corFarol(status) {
+      const s = (status || "").trim().toLowerCase();
+
+      if (s.includes("ñ atingido")) return "vermelho";
+      if (s.includes("atingido"))   return "verde";
+      if (s.includes("indef"))      return "amarelo";
+
+      return "amarelo"; // padrão
+    }
+
+    // --- Cria um card a partir da linha do CSV ---
+    function criarCard(meta) {
+      const farol = corFarol(meta.Status);
+
+      const div = document.createElement("div");
+      div.classList.add("card");
+
+      div.innerHTML = `
+        <h2>${meta.Indicador}</h2>
+        <p><strong>Área:</strong> ${meta["Área"]}</p>
+        <p><strong>Meta:</strong> ${meta.Meta}</p>
+        <p><strong>Resultado:</strong> ${meta.Resultado}</p>
+        <p><strong>Status:</strong> ${meta.Status}</p>
+        <p><strong>Mês:</strong> ${meta["Mês texto"]}</p>
+        <div class="farol ${farol}"></div>
+      `;
+
+      return div;
+    }
+
+    // --- Preenche combos de filtro ---
+    function preencherFiltros() {
+      const selMes = document.getElementById("filtroMes");
+      const selAno = document.getElementById("filtroAno");
+
+      // meses e anos únicos presentes no CSV
+      const meses = [...new Set(dadosCSV.map(d => d["Mês texto"]))];
+      const anos  = [...new Set(dadosCSV.map(d => d.Ano))];
+
+      meses.forEach(m => {
+        const op = document.createElement("option");
+        op.value = m;
+        op.textContent = m;
+        selMes.appendChild(op);
+      });
+
+      anos.forEach(a => {
+        const op = document.createElement("option");
+        op.value = a;
+        op.textContent = a;
+        selAno.appendChild(op);
+      });
+
+      // define padrão: mês anterior + ano (ajustado acima)
+      const mesPadrao = nomesMes[indiceMesAnterior];
+      if (meses.includes(mesPadrao)) {
+        selMes.value = mesPadrao;
+      }
+
+      if (anos.includes(String(anoAtual))) {
+        selAno.value = String(anoAtual);
+      } else if (anos.length > 0) {
+        selAno.value = anos[anos.length - 1]; // último ano da lista
+      }
+    }
+
+    // --- Atualiza cards conforme filtros ---
+    function atualizarCards() {
+      const mesF = document.getElementById("filtroMes").value;
+      const anoF = document.getElementById("filtroAno").value;
+
+      const filtrados = dadosCSV.filter(d =>
+        d["Mês texto"] === mesF && String(d.Ano) === String(anoF)
+      );
+
+      const container = document.getElementById("cards-container");
+      container.innerHTML = "";
+
+      filtrados.forEach(meta => container.appendChild(criarCard(meta)));
+    }
+
+    // --- Carrega CSV via PapaParse ---
+    Papa.parse(csvFile, {
+      download: true,
+      header: true,
+      delimiter: ";",
+      skipEmptyLines: true,
+      complete: function(results) {
+        // tira linhas vazias / lixo
+        dadosCSV = results.data.filter(l => l.Indicador && l["Mês texto"]);
+        preencherFiltros();
+        atualizarCards();
+      },
+      error: function(err) {
+        console.error("Erro ao carregar CSV N3:", err);
+      }
+    });
+
+    // Eventos dos filtros
+    document.getElementById("filtroMes").addEventListener("change", atualizarCards);
+    document.getElementById("filtroAno").addEventListener("change", atualizarCards);
+  </script>
+
+</body>
+</html>
