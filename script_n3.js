@@ -11,6 +11,7 @@ function carregarN3() {
 
       const mesSelecionado = document.getElementById("filtroMes").value;   // ex.: "Março"
       const anoSelecionado = document.getElementById("filtroAno").value;   // ex.: "2025"
+      
 
       // Atualiza o título dinamicamente
       document.querySelector("header h1").innerText =
@@ -20,12 +21,8 @@ function carregarN3() {
       container.innerHTML = "";
 
       // ---------------- Filtro pelos campos corretos ----------------
-      const filtrado = dados.filter(r => {
-        const mesTexto = (r["Mês texto"] || "").trim(); // coluna do CSV
-        const ano = String(r["Ano"] || "").trim();      // coluna do CSV
+      const filtrado = dados.filter(row => row.MêsTexto === mes && row.Ano === ano);
 
-        return mesTexto === mesSelecionado && ano === anoSelecionado;
-      });
       // --------------------------------------------------------------
 
       if (!filtrado || filtrado.length === 0) {
@@ -61,11 +58,11 @@ function carregarN3() {
         let farolClass = "amarelo";
         const statusNorm = status.toLowerCase();
 
-        if (statusNorm.includes("atingida")) {
+        if (statusNorm.includes("atingido")) {
           farolClass = "verde";
-        } else if (statusNorm.includes("parcial") || statusNorm.includes("andamento")) {
+        } else if (statusNorm.includes("parcial") || statusNorm.includes("Indefinido")) {
           farolClass = "amarelo";
-        } else if (statusNorm.trim() === "" || statusNorm.includes("indefinido")) {
+        } else if (statusNorm.trim() === "" || statusNorm.includes("Ñ Atingido")) {
           farolClass = "vermelho"; // por enquanto joga pra vermelho
         } else {
           farolClass = "vermelho";
