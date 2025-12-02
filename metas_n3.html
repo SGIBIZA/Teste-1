@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Painel de Metas N3</title>
 
-    <!-- CSS EXTERNO (opcional). Se não existir styles.css, remova esta linha -->
-    <link rel="stylesheet" href="styles.css" />
-
-    <style>
+      <style>
         body {
             background-color: #ffffff;
             font-family: Arial, sans-serif;
@@ -76,14 +73,30 @@
         .vermelho { background-color: #e74c3c; }
     </style>
 </head>
-
 <body>
-
-    <h1>Painel de Metas N3</h1>
+    <header>
+        <h1>Painel de Metas N3</h1>
+    </header>
 
     <div class="filtros">
-        <select id="filtroMes"></select>
-        <select id="filtroAno"></select>
+    <select id="filtroMes">
+      <option selected>Janeiro</option>
+      <option>Fevereiro</option>
+      <option>Março</option>
+      <option>Abril</option>
+      <option>Maio</option>
+      <option>Junho</option>
+      <option>Julho</option>
+      <option>Agosto</option>
+      <option>Setembro</option>
+      <option>Outubro</option>
+      <option>Novembro</option>
+      <option>Dezembro</option>
+    </select>
+        <select id="filtroAno">
+      <option>2024</option>
+      <option selected>2025</option>
+    </select>
     </div>
 
     <div id="cards-container"></div>
