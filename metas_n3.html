@@ -1,109 +1,160 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Painel de Metas N3</title>
+<meta charset="UTF-8">
+<title>Indicadores N3 - Filtro por Mês e Ano</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background: #f2f2f2;
+  }
 
-      <style>
-        body {
-            background-color: #ffffff;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
-        }
+  h2 {
+    margin-bottom: 5px;
+  }
 
-        h1 {
-            margin-top: 20px;
-            font-size: 28px;
-            color: #000;
-        }
+  select {
+    padding: 8px;
+    margin-right: 10px;
+    margin-bottom: 20px;
+  }
 
-        .filtros {
-            margin-top: 20px;
-            margin-bottom: 20px;
-        }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    display: none; /* tabela só aparece depois do filtro */
+  }
 
-        .filtros select {
-            padding: 10px;
-            margin: 5px;
-            font-size: 16px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-        }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    background: white;
+  }
 
-        #cards-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
-            padding: 20px;
-        }
-
-        .card {
-            background: #f5f5f5;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
-            text-align: left;
-            position: relative;
-        }
-
-        .card h2 {
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-
-        .card p {
-            margin: 6px 0;
-            font-size: 14px;
-        }
-
-        .farol {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            position: absolute;
-            right: 20px;
-            top: 20px;
-        }
-
-        .verde { background-color: #2ecc71; }
-        .amarelo { background-color: #F8AD1E; }
-        .vermelho { background-color: #e74c3c; }
-    </style>
+  th {
+    background: #333;
+    color: white;
+  }
+</style>
 </head>
 <body>
-    <header>
-        <h1>Painel de Metas N3</h1>
-    </header>
 
-    <div class="filtros">
-    <select id="filtroMes">
-      <option selected>Janeiro</option>
-      <option>Fevereiro</option>
-      <option>Março</option>
-      <option>Abril</option>
-      <option>Maio</option>
-      <option>Junho</option>
-      <option>Julho</option>
-      <option>Agosto</option>
-      <option>Setembro</option>
-      <option>Outubro</option>
-      <option>Novembro</option>
-      <option>Dezembro</option>
-    </select>
-        <select id="filtroAno">
-      <option>2024</option>
-      <option selected>2025</option>
-    </select>
-    </div>
+<h2>Filtro de Indicadores N3</h2>
 
-    <div id="cards-container"></div>
+<label>Mês:</label>
+<select id="filtroMes"></select>
 
-    <!-- Scripts necessários -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <script src="script_n3.js"></script>
+<label>Ano:</label>
+<select id="filtroAno"></select>
+
+<button onclick="filtrar()">Filtrar</button>
+
+<table id="tabelaResultado">
+  <thead id="cabecalho"></thead>
+  <tbody id="corpoTabela"></tbody>
+</table>
+
+<script>
+// Caminho do CSV direto do GitHub
+const CSV_URL = "https://raw.githubusercontent.com/SGIBIZA/Teste-1/main/base_n3.csv";
+
+// Variáveis globais
+let dadosCSV = [];
+let cabecalhos = [];
+
+document.addEventListener("DOMContentLoaded", () => {
+  carregarCSV();
+});
+
+// -----------------------------
+// 1) Carregar CSV do GitHub
+// -----------------------------
+function carregarCSV() {
+  fetch(CSV_URL)
+    .then(resp => resp.text())
+    .then(texto => {
+      processarCSV(texto);
+      preencherFiltros();
+    })
+    .catch(err => console.error("Erro ao carregar CSV:", err));
+}
+
+// -----------------------------
+// 2) Processar CSV
+// -----------------------------
+function processarCSV(texto) {
+  const linhas = texto.split("\n").map(l => l.trim()).filter(l => l);
+
+  cabecalhos = linhas[0].split(";");
+  linhas.shift(); // remove a linha do cabeçalho
+
+  dadosCSV = linhas.map(linha => {
+    const colunas = linha.split(";");
+    const item = {};
+    cabecalhos.forEach((c, i) => {
+      item[c] = colunas[i] || "";
+    });
+    return item;
+  });
+}
+
+// -----------------------------
+// 3) Criar filtros de Mês e Ano
+// -----------------------------
+function preencherFiltros() {
+  const filtroMes = document.getElementById("filtroMes");
+  const filtroAno = document.getElementById("filtroAno");
+
+  let meses = new Set();
+  let anos = new Set();
+
+  dadosCSV.forEach(item => {
+    meses.add(item["Mês texto"]);
+    anos.add(item["Ano"]);
+  });
+
+  filtroMes.innerHTML = "<option value=''>Selecione</option>";
+  filtroAno.innerHTML = "<option value=''>Selecione</option>";
+
+  meses.forEach(m => filtroMes.innerHTML += `<option value="${m}">${m}</option>`);
+  anos.forEach(a => filtroAno.innerHTML += `<option value="${a}">${a}</option>`);
+}
+
+// -----------------------------
+// 4) Filtrar e montar a tabela
+// -----------------------------
+function filtrar() {
+  const mes = document.getElementById("filtroMes").value;
+  const ano = document.getElementById("filtroAno").value;
+
+  const tabela = document.getElementById("tabelaResultado");
+  const cabeca = document.getElementById("cabecalho");
+  const corpo = document.getElementById("corpoTabela");
+
+  if (!mes || !ano) {
+    alert("Selecione Mês e Ano para filtrar.");
+    return;
+  }
+
+  const filtrados = dadosCSV.filter(item =>
+    item["Mês texto"] === mes && item["Ano"] === ano
+  );
+
+  // Cabeçalho
+  cabeca.innerHTML = "<tr>" + cabecalhos.map(c => `<th>${c}</th>`).join("") + "</tr>";
+
+  // Corpo
+  corpo.innerHTML = "";
+  filtrados.forEach(item => {
+    const linha = "<tr>" + cabecalhos.map(c => `<td>${item[c]}</td>`).join("") + "</tr>";
+    corpo.innerHTML += linha;
+  });
+
+  tabela.style.display = "table";
+}
+</script>
 
 </body>
 </html>
