@@ -5,10 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Painel de Metas N3</title>
 
-  <!-- se tiver um styles.css geral, mantém; se não, pode tirar essa linha -->
   <link rel="stylesheet" href="styles.css">
 
-  <!-- PapaParse (mesmo esquema das outras páginas) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"
           integrity="sha512-0JfUYgI/H3Jg6F1TM8pZ2Gz98w0OaPgf7ETfPRxLQWX/yCqc9H0WsOwNvO1A7dWivMRM4XxS9Q/GXeqLkE3p3g=="
           crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -27,7 +25,6 @@
       color: #000;
     }
 
-    /* Filtros */
     .filtros {
       margin-top: 20px;
       margin-bottom: 20px;
@@ -41,7 +38,6 @@
       border: 1px solid #ccc;
     }
 
-    /* Grid de cards */
     #cards-container {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -50,7 +46,6 @@
       padding: 20px;
     }
 
-    /* Card */
     .card {
       background: #f5f5f5;
       padding: 20px;
@@ -70,7 +65,6 @@
       font-size: 14px;
     }
 
-    /* Farol */
     .farol {
       width: 40px;
       height: 40px;
@@ -97,19 +91,16 @@
   <div id="cards-container"></div>
 
   <script>
-    // Caminho do CSV (mesma pasta do HTML)
     const csvFile = "base_n3.csv";
-
     let dadosCSV = [];
 
-    // mês/ano padrão = mês anterior ao atual
     const hoje = new Date();
     let anoAtual = hoje.getFullYear();
-    let indiceMesAnterior = hoje.getMonth() - 1; // 0 = Jan
+    let indiceMesAnterior = hoje.getMonth() - 1;
 
     if (indiceMesAnterior < 0) {
-      indiceMesAnterior = 11; // Dezembro
-      anoAtual = anoAtual - 1;
+      indiceMesAnterior = 11;
+      anoAtual--;
     }
 
     const nomesMes = [
@@ -117,18 +108,15 @@
       "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
     ];
 
-    // --- Cor do farol pela coluna Status ---
     function corFarol(status) {
       const s = (status || "").trim().toLowerCase();
 
       if (s.includes("ñ atingido")) return "vermelho";
       if (s.includes("atingido"))   return "verde";
       if (s.includes("indef"))      return "amarelo";
-
-      return "amarelo"; // padrão
+      return "amarelo";
     }
 
-    // --- Cria um card a partir da linha do CSV ---
     function criarCard(meta) {
       const farol = corFarol(meta.Status);
 
@@ -148,49 +136,28 @@
       return div;
     }
 
-    // --- Preenche combos de filtro ---
     function preencherFiltros() {
       const selMes = document.getElementById("filtroMes");
       const selAno = document.getElementById("filtroAno");
 
-      // meses e anos únicos presentes no CSV
-      const meses = [...new Set(dadosCSV.map(d => d["Mês texto"]))];
-      const anos  = [...new Set(dadosCSV.map(d => d.Ano))];
+      const meses = [...new Set(dadosCSV.map(d => d["Mês texto"]))].filter(Boolean);
+      const anos  = [...new Set(dadosCSV.map(d => d.Ano))].filter(Boolean);
 
-      meses.forEach(m => {
-        const op = document.createElement("option");
-        op.value = m;
-        op.textContent = m;
-        selMes.appendChild(op);
-      });
+      meses.forEach(m => selMes.innerHTML += `<option value="${m}">${m}</option>`);
+      anos.forEach(a  => selAno.innerHTML += `<option value="${a}">${a}</option>`);
 
-      anos.forEach(a => {
-        const op = document.createElement("option");
-        op.value = a;
-        op.textContent = a;
-        selAno.appendChild(op);
-      });
-
-      // define padrão: mês anterior + ano (ajustado acima)
       const mesPadrao = nomesMes[indiceMesAnterior];
-      if (meses.includes(mesPadrao)) {
-        selMes.value = mesPadrao;
-      }
-
-      if (anos.includes(String(anoAtual))) {
-        selAno.value = String(anoAtual);
-      } else if (anos.length > 0) {
-        selAno.value = anos[anos.length - 1]; // último ano da lista
-      }
+      if (meses.includes(mesPadrao)) selMes.value = mesPadrao;
+      if (anos.includes(String(anoAtual))) selAno.value = String(anoAtual);
     }
 
-    // --- Atualiza cards conforme filtros ---
     function atualizarCards() {
       const mesF = document.getElementById("filtroMes").value;
       const anoF = document.getElementById("filtroAno").value;
 
       const filtrados = dadosCSV.filter(d =>
-        d["Mês texto"] === mesF && String(d.Ano) === String(anoF)
+        d["Mês texto"] === mesF &&
+        String(d.Ano) === String(anoF)
       );
 
       const container = document.getElementById("cards-container");
@@ -199,24 +166,26 @@
       filtrados.forEach(meta => container.appendChild(criarCard(meta)));
     }
 
-    // --- Carrega CSV via PapaParse ---
     Papa.parse(csvFile, {
       download: true,
       header: true,
       delimiter: ";",
       skipEmptyLines: true,
       complete: function(results) {
-        // tira linhas vazias / lixo
-        dadosCSV = results.data.filter(l => l.Indicador && l["Mês texto"]);
+
+        // 🔥 CORREÇÃO DEFINITIVA
+        dadosCSV = results.data.filter(l =>
+          l &&
+          l["Indicador"] &&
+          l["Mês texto"] &&
+          l["Status"] !== undefined
+        );
+
         preencherFiltros();
         atualizarCards();
-      },
-      error: function(err) {
-        console.error("Erro ao carregar CSV N3:", err);
       }
     });
 
-    // Eventos dos filtros
     document.getElementById("filtroMes").addEventListener("change", atualizarCards);
     document.getElementById("filtroAno").addEventListener("change", atualizarCards);
   </script>
