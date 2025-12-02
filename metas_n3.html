@@ -1,230 +1,96 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel de Metas N3</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Painel de Metas N3</title>
 
-  <link rel="stylesheet" href="styles.css">
+    <!-- CSS EXTERNO (opcional). Se não existir styles.css, remova esta linha -->
+    <link rel="stylesheet" href="styles.css" />
 
-  <!-- PapaParse sem integrity, igual nas outras páginas -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        body {
+            background-color: #ffffff;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
 
-  <style>
-    body {
-      background-color: #ffffff;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 20px;
-    }
+        h1 {
+            margin-top: 20px;
+            font-size: 28px;
+            color: #000;
+        }
 
-    h1 {
-      margin-top: 20px;
-      font-size: 28px;
-      color: #000;
-    }
+        .filtros {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
 
-    .filtros {
-      margin-top: 20px;
-      margin-bottom: 20px;
-    }
+        .filtros select {
+            padding: 10px;
+            margin: 5px;
+            font-size: 16px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
 
-    .filtros select {
-      padding: 10px;
-      margin: 5px;
-      font-size: 16px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
+        #cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+            padding: 20px;
+        }
 
-    #cards-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-      margin-top: 30px;
-      padding: 20px;
-    }
+        .card {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+            text-align: left;
+            position: relative;
+        }
 
-    .card {
-      background: #f5f5f5;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.12);
-      text-align: left;
-      position: relative;
-    }
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
 
-    .card h2 {
-      font-size: 18px;
-      margin-bottom: 10px;
-    }
+        .card p {
+            margin: 6px 0;
+            font-size: 14px;
+        }
 
-    .card p {
-      margin: 6px 0;
-      font-size: 14px;
-    }
+        .farol {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            position: absolute;
+            right: 20px;
+            top: 20px;
+        }
 
-    .farol {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      position: absolute;
-      right: 20px;
-      top: 20px;
-    }
-
-    .verde   { background-color: #2ecc71; }
-    .amarelo { background-color: #F8AD1E; }
-    .vermelho{ background-color: #e74c3c; }
-  </style>
+        .verde { background-color: #2ecc71; }
+        .amarelo { background-color: #F8AD1E; }
+        .vermelho { background-color: #e74c3c; }
+    </style>
 </head>
+
 <body>
 
-  <h1>Painel de Metas N3</h1>
+    <h1>Painel de Metas N3</h1>
 
-  <div class="filtros">
-    <select id="filtroMes"></select>
-    <select id="filtroAno"></select>
-  </div>
+    <div class="filtros">
+        <select id="filtroMes"></select>
+        <select id="filtroAno"></select>
+    </div>
 
-  <div id="cards-container"></div>
+    <div id="cards-container"></div>
 
-  <script>
-    const csvFile = "base_n3.csv";
-    let dadosCSV = [];
-
-    const hoje = new Date();
-    let anoAtual = hoje.getFullYear();
-    let indiceMesAnterior = hoje.getMonth() - 1;
-
-    if (indiceMesAnterior < 0) {
-      indiceMesAnterior = 11;
-      anoAtual--;
-    }
-
-    const nomesMes = [
-      "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
-      "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
-    ];
-
-    function corFarol(status) {
-      const s = (status || "").trim().toLowerCase();
-
-      if (s.includes("ñ atingido")) return "vermelho";
-      if (s.includes("atingido"))   return "verde";
-      if (s.includes("indef"))      return "amarelo";
-      return "amarelo";
-    }
-
-    // --------- Mapeia nomes de campos do CSV, mesmo se vierem "quebrados" ---------
-    let campoArea, campoIndic, campoMeta, campoResultado, campoMesTexto, campoAno, campoStatus;
-
-    function normalizarNome(str) {
-      return (str || "")
-        .toString()
-        .toLowerCase()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove acentos
-        .replace(/[^\w]/g, ""); // remove espaços, /, :, etc
-    }
-
-    function montarMapaCampos(campos) {
-      function encontrarCampo(alvo) {
-        const alvoNorm = normalizarNome(alvo);
-        return campos.find(c => normalizarNome(c) === alvoNorm) || alvo;
-      }
-
-      campoArea      = encontrarCampo("Área");
-      campoIndic     = encontrarCampo("Indicador");
-      campoMeta      = encontrarCampo("Meta");
-      campoResultado = encontrarCampo("Resultado");
-      campoMesTexto  = encontrarCampo("Mês texto");
-      campoAno       = encontrarCampo("Ano");
-      campoStatus    = encontrarCampo("Status");
-    }
-    // ------------------------------------------------------------------------------------
-
-    function criarCard(meta) {
-      const farol = corFarol(meta[campoStatus]);
-
-      const div = document.createElement("div");
-      div.classList.add("card");
-
-      div.innerHTML = `
-        <h2>${meta[campoIndic]}</h2>
-        <p><strong>Área:</strong> ${meta[campoArea]}</p>
-        <p><strong>Meta:</strong> ${meta[campoMeta]}</p>
-        <p><strong>Resultado:</strong> ${meta[campoResultado]}</p>
-        <p><strong>Status:</strong> ${meta[campoStatus]}</p>
-        <p><strong>Mês:</strong> ${meta[campoMesTexto]}</p>
-        <div class="farol ${farol}"></div>
-      `;
-
-      return div;
-    }
-
-    function preencherFiltros() {
-      const selMes = document.getElementById("filtroMes");
-      const selAno = document.getElementById("filtroAno");
-
-      const meses = [...new Set(dadosCSV.map(d => d[campoMesTexto]))].filter(Boolean);
-      const anos  = [...new Set(dadosCSV.map(d => d[campoAno]))].filter(Boolean);
-
-      meses.forEach(m => selMes.innerHTML += `<option value="${m}">${m}</option>`);
-      anos.forEach(a  => selAno.innerHTML += `<option value="${a}">${a}</option>`);
-
-      const mesPadrao = nomesMes[indiceMesAnterior];
-      if (meses.includes(mesPadrao)) selMes.value = mesPadrao;
-      if (anos.includes(String(anoAtual))) selAno.value = String(anoAtual);
-    }
-
-    function atualizarCards() {
-      const mesF = document.getElementById("filtroMes").value;
-      const anoF = document.getElementById("filtroAno").value;
-
-      const filtrados = dadosCSV.filter(d =>
-        d[campoMesTexto] === mesF &&
-        String(d[campoAno]) === String(anoF)
-      );
-
-      const container = document.getElementById("cards-container");
-      container.innerHTML = "";
-
-      filtrados.forEach(meta => container.appendChild(criarCard(meta)));
-    }
-
-    Papa.parse(csvFile, {
-      download: true,
-      header: true,
-      delimiter: ";",
-      skipEmptyLines: true,
-      complete: function(results) {
-        const dados = results.data || [];
-
-        // Pega a lista de campos reais do CSV (mesmo se estiverem com acentos quebrados)
-        const campos = results.meta && results.meta.fields
-          ? results.meta.fields
-          : (dados[0] ? Object.keys(dados[0]) : []);
-
-        montarMapaCampos(campos);
-
-        // filtra linhas válidas
-        dadosCSV = dados.filter(l =>
-          l &&
-          l[campoIndic] &&
-          l[campoMesTexto]
-        );
-
-        preencherFiltros();
-        atualizarCards();
-      },
-      error: function(err) {
-        console.error("Erro ao carregar CSV N3:", err);
-      }
-    });
-
-    document.getElementById("filtroMes").addEventListener("change", atualizarCards);
-    document.getElementById("filtroAno").addEventListener("change", atualizarCards);
-  </script>
+    <!-- Scripts necessários -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="script_n3.js"></script>
 
 </body>
 </html>
