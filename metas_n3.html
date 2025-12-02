@@ -117,19 +117,46 @@
       return "amarelo";
     }
 
+    // --------- NOVO: mapeia nomes de campos do CSV, mesmo se vierem "quebrados" ---------
+    let campoArea, campoIndic, campoMeta, campoResultado, campoMesTexto, campoAno, campoStatus;
+
+    function normalizarNome(str) {
+      return (str || "")
+        .toString()
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove acentos
+        .replace(/[^\w]/g, ""); // remove espaços, /, :, etc
+    }
+
+    function montarMapaCampos(campos) {
+      function encontrarCampo(alvo) {
+        const alvoNorm = normalizarNome(alvo);
+        return campos.find(c => normalizarNome(c) === alvoNorm) || alvo;
+      }
+
+      campoArea      = encontrarCampo("Área");
+      campoIndic     = encontrarCampo("Indicador");
+      campoMeta      = encontrarCampo("Meta");
+      campoResultado = encontrarCampo("Resultado");
+      campoMesTexto  = encontrarCampo("Mês texto");
+      campoAno       = encontrarCampo("Ano");
+      campoStatus    = encontrarCampo("Status");
+    }
+    // ------------------------------------------------------------------------------------
+
     function criarCard(meta) {
-      const farol = corFarol(meta.Status);
+      const farol = corFarol(meta[campoStatus]);
 
       const div = document.createElement("div");
       div.classList.add("card");
 
       div.innerHTML = `
-        <h2>${meta.Indicador}</h2>
-        <p><strong>Área:</strong> ${meta["Área"]}</p>
-        <p><strong>Meta:</strong> ${meta.Meta}</p>
-        <p><strong>Resultado:</strong> ${meta.Resultado}</p>
-        <p><strong>Status:</strong> ${meta.Status}</p>
-        <p><strong>Mês:</strong> ${meta["Mês texto"]}</p>
+        <h2>${meta[campoIndic]}</h2>
+        <p><strong>Área:</strong> ${meta[campoArea]}</p>
+        <p><strong>Meta:</strong> ${meta[campoMeta]}</p>
+        <p><strong>Resultado:</strong> ${meta[campoResultado]}</p>
+        <p><strong>Status:</strong> ${meta[campoStatus]}</p>
+        <p><strong>Mês:</strong> ${meta[campoMesTexto]}</p>
         <div class="farol ${farol}"></div>
       `;
 
@@ -140,8 +167,8 @@
       const selMes = document.getElementById("filtroMes");
       const selAno = document.getElementById("filtroAno");
 
-      const meses = [...new Set(dadosCSV.map(d => d["Mês texto"]))].filter(Boolean);
-      const anos  = [...new Set(dadosCSV.map(d => d.Ano))].filter(Boolean);
+      const meses = [...new Set(dadosCSV.map(d => d[campoMesTexto]))].filter(Boolean);
+      const anos  = [...new Set(dadosCSV.map(d => d[campoAno]))].filter(Boolean);
 
       meses.forEach(m => selMes.innerHTML += `<option value="${m}">${m}</option>`);
       anos.forEach(a  => selAno.innerHTML += `<option value="${a}">${a}</option>`);
@@ -156,8 +183,8 @@
       const anoF = document.getElementById("filtroAno").value;
 
       const filtrados = dadosCSV.filter(d =>
-        d["Mês texto"] === mesF &&
-        String(d.Ano) === String(anoF)
+        d[campoMesTexto] === mesF &&
+        String(d[campoAno]) === String(anoF)
       );
 
       const container = document.getElementById("cards-container");
@@ -172,17 +199,27 @@
       delimiter: ";",
       skipEmptyLines: true,
       complete: function(results) {
+        const dados = results.data || [];
 
-        // 🔥 CORREÇÃO DEFINITIVA
-        dadosCSV = results.data.filter(l =>
+        // Pega a lista de campos reais do CSV (mesmo se estiverem com acentos quebrados)
+        const campos = results.meta && results.meta.fields
+          ? results.meta.fields
+          : (dados[0] ? Object.keys(dados[0]) : []);
+
+        montarMapaCampos(campos);
+
+        // filtra linhas válidas
+        dadosCSV = dados.filter(l =>
           l &&
-          l["Indicador"] &&
-          l["Mês texto"] &&
-          l["Status"] !== undefined
+          l[campoIndic] &&
+          l[campoMesTexto]
         );
 
         preencherFiltros();
         atualizarCards();
+      },
+      error: function(err) {
+        console.error("Erro ao carregar CSV N3:", err);
       }
     });
 
