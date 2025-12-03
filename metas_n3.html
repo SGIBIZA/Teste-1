@@ -6,50 +6,105 @@
 <style>
   body {
     font-family: Arial, sans-serif;
-    padding: 20px;
+    margin: 0;
     background: #f2f2f2;
   }
 
-  h2 {
-    margin-bottom: 5px;
+  /* Cabeçalho no padrão BIZA */
+  .topo {
+    background: #000;
+    padding: 25px;
+    text-align: center;
+  }
+
+  .topo h1 {
+    margin: 0;
+    color: #F8AD1E; /* Laranja GHT */
+    font-size: 32px;
+    font-weight: bold;
+  }
+
+  /* Área de filtros */
+  .filtros {
+    padding: 20px 30px;
+  }
+
+  label {
+    font-weight: bold;
+    margin-right: 8px;
   }
 
   select {
-    padding: 8px;
-    margin-right: 10px;
-    margin-bottom: 20px;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-    display: none; /* tabela só aparece depois do filtro */
-  }
-
-  th, td {
+    padding: 10px;
+    border-radius: 6px;
     border: 1px solid #ccc;
-    padding: 8px;
+    margin-right: 15px;
+    font-size: 15px;
+  }
+
+  button {
+    padding: 10px 18px;
+    border-radius: 6px;
+    border: none;
+    background: #F8AD1E;
+    color: black;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: #e19b16;
+  }
+
+  /* Tabela */
+  table {
+    width: 95%;
+    margin: 20px auto;
+    border-collapse: collapse;
     background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    display: none;
   }
 
   th {
-    background: #333;
+    background: #444; 
     color: white;
+    font-size: 14px;
+    padding: 10px;
+    text-align: left;
+  }
+
+  td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  tr:nth-child(even) {
+    background: #f9f9f9;
+  }
+
+  tr:hover {
+    background: #f1f1f1;
   }
 </style>
+
 </head>
 <body>
 
-<h2>Filtro de Indicadores N3</h2>
+<div class="topo">
+  <h1>Filtro de Indicadores N3</h1>
+</div>
 
-<label>Mês:</label>
-<select id="filtroMes"></select>
+<div class="filtros">
+  <label>Mês:</label>
+  <select id="filtroMes"></select>
 
-<label>Ano:</label>
-<select id="filtroAno"></select>
+  <label>Ano:</label>
+  <select id="filtroAno"></select>
 
-<button onclick="filtrar()">Filtrar</button>
+  <button onclick="filtrar()">Filtrar</button>
+</div>
 
 <table id="tabelaResultado">
   <thead id="cabecalho"></thead>
@@ -87,22 +142,31 @@ function carregarCSV() {
 function processarCSV(texto) {
   const linhas = texto.split("\n").map(l => l.trim()).filter(l => l);
 
-  // Remove BOM e divide corretamente o cabeçalho
-cabecalhos = linhas[0]
-    .replace(/^\uFEFF/, '') // remove caractere BOM
-    .split(";");
+  // Remove BOM
+  let header = linhas[0].replace(/^\uFEFF/, '').split(";");
+
+  // Normalização dos nomes das colunas
+  cabecalhos = header.map(c =>
+    c.normalize("NFD")
+     .replace(/[\u0300-\u036f]/g, "") // remove acentos
+     .replace(/[^a-zA-Z0-9 ]/g, "")   // remove caracteres � e outros
+     .trim()
+  );
 
   linhas.shift(); // remove a linha do cabeçalho
 
   dadosCSV = linhas.map(linha => {
     const colunas = linha.split(";");
     const item = {};
+
     cabecalhos.forEach((c, i) => {
       item[c] = colunas[i] || "";
     });
+
     return item;
   });
 }
+
 
 // -----------------------------
 // 3) Criar filtros de Mês e Ano
@@ -115,7 +179,7 @@ function preencherFiltros() {
   let anos = new Set();
 
   dadosCSV.forEach(item => {
-    meses.add(item["Mês texto"]);
+    meses.add(item["Mes texto"]);
     anos.add(item["Ano"]);
   });
 
@@ -143,7 +207,7 @@ function filtrar() {
   }
 
   const filtrados = dadosCSV.filter(item =>
-    item["Mês texto"] === mes && item["Ano"] === ano
+    item["Mes texto"] === mes && item["Ano"] === ano
   );
 
   // Cabeçalho
