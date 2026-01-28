@@ -193,7 +193,7 @@
   // ===== Load XLSX =====
   async function loadXlsx(){
     // coloque seu excel aqui
-    const url = 'data/iniciativas.xlsx';
+    const url = 'iniciativas.xlsx';
 
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Não consegui carregar ${url} (${res.status})`);
@@ -307,7 +307,7 @@
     els.empty.classList.remove('hidden');
     els.empty.innerHTML = `
       <h2>Erro ao carregar o arquivo Excel</h2>
-      <p>Confira se o arquivo está em <b>data/iniciativas.xlsx</b> e se o GitHub Pages está servindo a pasta corretamente.</p>
+      <p>Confira se o arquivo está em <b>iniciativas.xlsx</b> e se o GitHub Pages está servindo a pasta corretamente.</p>
       <p style="color:#777;font-size:12px">${escapeHtml(err.message)}</p>
     `;
   });
