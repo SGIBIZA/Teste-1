@@ -1,6 +1,7 @@
 (() => {
-  const $ = (s, el=document) => el.querySelector(s);
+  const $ = (s, el = document) => el.querySelector(s);
 
+  // ===== Elements =====
   const els = {
     grid: $('#grid'),
     empty: $('#empty'),
@@ -22,24 +23,37 @@
     dUnidade: $('#dUnidade'),
     dTema: $('#dTema'),
     dDesc: $('#dDesc'),
+
+    // viewer
+    dViewer: $('#dViewer'),
+    dViewerLabel: $('#dViewerLabel'),
+    dOpenNewTab: $('#dOpenNewTab'),
+    dFrame: $('#dFrame'),
+    dImg: $('#dImg'),
   };
 
+  // ===== State =====
   const state = {
     rows: [],
     filtered: [],
-    filters: {
-      q: '',
-      unidade: 'Todos',
-      area: 'Todos',
-    }
+    filters: { q: '', unidade: 'Todos', area: 'Todos' }
   };
 
-  // ===== Helpers =====
+  // ===== Utils =====
   const norm = (v) => (v ?? '').toString().trim();
   const normHeader = (h) => norm(h).replace(/\s+/g, ' ').replace(/\n/g, ' ').toLowerCase();
 
+  const escapeHtml = (str) =>
+    (str ?? '').toString()
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;");
+
+  const pad3 = (n) => String(n).padStart(3, '0');
+
   function pickCol(row, candidates){
-    // candidates: array of possible normalized headers
     for (const c of candidates) {
       if (row[c] != null && norm(row[c]) !== '') return norm(row[c]);
     }
@@ -49,16 +63,14 @@
   function makeTitleFromText(text){
     const t = norm(text);
     if (!t) return 'Iniciativa';
-    // usa primeira frase/linha como título (curto)
     const first = t.split(/\n|\r|\./)[0].trim();
     if (first.length >= 10 && first.length <= 64) return first;
-    // fallback: primeiras palavras
-    return t.split(/\s+/).slice(0, 7).join(' ') + (t.split(/\s+/).length > 7 ? '…' : '');
+    const words = t.split(/\s+/);
+    return words.slice(0, 7).join(' ') + (words.length > 7 ? '…' : '');
   }
 
   function inferTema(text){
     const t = norm(text).toLowerCase();
-    // heurística simples (você pode evoluir depois)
     if (t.includes('power automate') || t.includes('automat')) return 'Automação / IA';
     if (t.includes('dashboard') || t.includes('bi')) return 'Dados / IA';
     if (t.includes('padron') || t.includes('process')) return 'Processos / IA';
@@ -66,22 +78,78 @@
     return 'IA / Inovação';
   }
 
+  function isImage(url){
+    return /\.(png|jpg|jpeg|gif|webp|svg)(\?.*)?$/i.test(url);
+  }
+
+  function isPdf(url){
+    return /\.pdf(\?.*)?$/i.test(url);
+  }
+
+  function driveFileId(url){
+    // https://drive.google.com/file/d/FILE_ID/view?...
+    const m = url.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
+    return m ? m[1] : '';
+  }
+
+  function toDrivePreviewUrl(url){
+    const id = driveFileId(url);
+    return id ? `https://drive.google.com/file/d/${id}/preview` : url;
+  }
+
+  function classifyAttachment(raw){
+    const url = norm(raw);
+    if (!url) return { type: 'none', url: '' };
+
+    const u = url.toLowerCase();
+
+    // Google Drive share -> preview
+    if (u.includes('drive.google.com/file/d/')) {
+      // pode ser PDF ou imagem, mas o preview funciona pra ambos
+      return { type: 'iframe', url: toDrivePreviewUrl(url) , openUrl: url };
+    }
+
+    if (isPdf(url)) return { type: 'pdf', url };
+    if (isImage(url)) return { type: 'image', url };
+
+    // qualquer outro link (site, sharepoint, etc)
+    return { type: 'link', url };
+  }
+
+  function show(el){ el.classList.remove('hidden'); }
+  function hide(el){ el.classList.add('hidden'); }
+
+  function resetViewer(){
+    hide(els.dViewer);
+    hide(els.dFrame);
+    hide(els.dImg);
+    els.dFrame.removeAttribute('src');
+    els.dImg.removeAttribute('src');
+    els.dOpenNewTab.setAttribute('href', '#');
+    els.dViewerLabel.textContent = 'Anexo';
+  }
+
+  // ===== Render =====
+  function renderChips(){
+    const chips = [];
+    if (state.filters.unidade !== 'Todos') chips.push(`Filial: ${state.filters.unidade}`);
+    if (state.filters.area !== 'Todos') chips.push(`Área: ${state.filters.area}`);
+    if (state.filters.q) chips.push(`Busca: "${state.filters.q}"`);
+    els.chips.innerHTML = chips.map(c => `<span class="chip">${escapeHtml(c)}</span>`).join('');
+  }
+
   function render(){
     els.grid.innerHTML = '';
-    const list = state.filtered;
+    els.countInfo.textContent = `Iniciativas publicadas: ${state.filtered.length}`;
 
-    els.countInfo.textContent = `Iniciativas publicadas: ${list.length}`;
-
-    if (!list.length){
+    if (!state.filtered.length){
       els.empty.classList.remove('hidden');
       return;
     }
     els.empty.classList.add('hidden');
 
     const frag = document.createDocumentFragment();
-    for (const item of list){
-      frag.appendChild(cardEl(item));
-    }
+    state.filtered.forEach(item => frag.appendChild(cardEl(item)));
     els.grid.appendChild(frag);
   }
 
@@ -90,7 +158,7 @@
     a.className = 'card';
 
     a.innerHTML = `
-      <div class="card__id">Iniciativa #${String(item.id).padStart(3,'0')}</div>
+      <div class="card__id">Iniciativa #${pad3(item.id)}</div>
       <h3 class="card__title">${escapeHtml(item.titulo)}</h3>
       <p class="card__desc"><b>Descrição:</b> ${escapeHtml(item.descricao)}</p>
 
@@ -112,34 +180,56 @@
       openDetails(item);
     });
 
-    // Clique no card inteiro também abre
     a.addEventListener('click', (e) => {
-      const isLink = e.target.closest('a');
-      if (isLink) return;
+      if (e.target.closest('a')) return;
       openDetails(item);
     });
 
     return a;
   }
 
+  // ===== Details =====
   function openDetails(item){
-    // Se tiver anexo (pdf/imagem), abre em nova aba
-    if (item.anexo){
-      window.open(item.anexo, '_blank', 'noopener');
-      return;
-    }
+    resetViewer();
 
-    // Senão abre modal com texto completo
-    els.detailsTitle.textContent = `Iniciativa #${String(item.id).padStart(3,'0')} — ${item.titulo}`;
+    els.detailsTitle.textContent = `Iniciativa #${pad3(item.id)} — ${item.titulo}`;
     els.dColab.textContent = item.colaborador || '-';
     els.dArea.textContent = item.area || '-';
     els.dUnidade.textContent = item.unidade || '-';
     els.dTema.textContent = item.tema || 'IA / Inovação';
+
+    // texto sempre aparece (pode ser útil mesmo com anexo)
     els.dDesc.textContent = item.descricao || '-';
+
+    const att = classifyAttachment(item.anexo);
+
+    if (att.type !== 'none'){
+      show(els.dViewer);
+      els.dOpenNewTab.href = att.openUrl || att.url;
+
+      if (att.type === 'image'){
+        els.dViewerLabel.textContent = 'Imagem';
+        show(els.dImg);
+        els.dImg.src = att.url;
+      } else if (att.type === 'pdf'){
+        els.dViewerLabel.textContent = 'PDF';
+        show(els.dFrame);
+        els.dFrame.src = att.url;
+      } else if (att.type === 'iframe'){
+        els.dViewerLabel.textContent = 'Anexo (Drive)';
+        show(els.dFrame);
+        els.dFrame.src = att.url;
+      } else {
+        // link genérico: não dá pra garantir embed, então só oferece abrir em nova aba
+        els.dViewerLabel.textContent = 'Link';
+        // (mantém só a barra e o botão)
+      }
+    }
 
     els.detailsDialog.showModal();
   }
 
+  // ===== Filters =====
   function applyFilters(){
     const q = state.filters.q.toLowerCase();
 
@@ -157,17 +247,9 @@
     render();
   }
 
-  function renderChips(){
-    const chips = [];
-    if (state.filters.unidade !== 'Todos') chips.push(`Filial: ${state.filters.unidade}`);
-    if (state.filters.area !== 'Todos') chips.push(`Área: ${state.filters.area}`);
-    if (state.filters.q) chips.push(`Busca: "${state.filters.q}"`);
-
-    els.chips.innerHTML = chips.map(c => `<span class="chip">${escapeHtml(c)}</span>`).join('');
-  }
-
   function fillSelect(selectEl, values){
     selectEl.innerHTML = '';
+
     const optAll = document.createElement('option');
     optAll.value = 'Todos';
     optAll.textContent = 'Todos';
@@ -181,18 +263,8 @@
     });
   }
 
-  function escapeHtml(str){
-    return (str ?? '').toString()
-      .replaceAll('&','&amp;')
-      .replaceAll('<','&lt;')
-      .replaceAll('>','&gt;')
-      .replaceAll('"','&quot;')
-      .replaceAll("'","&#039;");
-  }
-
   // ===== Load XLSX =====
   async function loadXlsx(){
-    // coloque seu excel aqui
     const url = 'iniciativas.xlsx';
 
     const res = await fetch(url);
@@ -200,23 +272,17 @@
     const buf = await res.arrayBuffer();
 
     const wb = XLSX.read(buf, { type: 'array' });
-    const sheetName = wb.SheetNames[0];
-    const ws = wb.Sheets[sheetName];
-
-    // pega tudo como objetos
+    const ws = wb.Sheets[wb.SheetNames[0]];
     const raw = XLSX.utils.sheet_to_json(ws, { defval: '' });
 
-    // normaliza headers (se vierem com \n)
-    // sheet_to_json já usa os nomes originais; vamos mapear para um "row" com chaves normalizadas
+    // normaliza headers
     const normalized = raw.map((row) => {
       const out = {};
-      for (const k of Object.keys(row)){
-        out[normHeader(k)] = row[k];
-      }
+      for (const k of Object.keys(row)) out[normHeader(k)] = row[k];
       return out;
     });
 
-    // Detecta colunas (aceita variações)
+    // variações de colunas aceitas
     const COL_COLAB = ['nome colaborador(a)', 'colaborador', 'nome', 'nome do colaborador'];
     const COL_UNIDADE = ['unidade', 'filial'];
     const COL_AREA = ['area', 'área', 'setor'];
@@ -233,30 +299,30 @@
       const descricao = pickCol(r, COL_DESC);
       const anexo = pickCol(r, COL_ANEXO);
 
-      const titulo = makeTitleFromText(descricao);
-      const tema = inferTema(descricao);
-
       return {
         id: idx + 1,
         colaborador,
         unidade,
         area,
-        titulo,
+        titulo: makeTitleFromText(descricao),
         descricao: norm(descricao),
-        tema,
-        anexo: norm(anexo)
+        tema: inferTema(descricao),
+        anexo: norm(anexo),
       };
     });
 
     state.rows = rows;
+    state.filtered = [...rows];
 
-    // Preenche filtros
-    const unidades = [...new Set(rows.map(r => r.unidade).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
-    const areas = [...new Set(rows.map(r => r.area).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    // Preenche selects
+    const unidades = [...new Set(rows.map(r => r.unidade).filter(Boolean))]
+      .sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    const areas = [...new Set(rows.map(r => r.area).filter(Boolean))]
+      .sort((a,b)=>a.localeCompare(b,'pt-BR'));
+
     fillSelect(els.fUnidade, unidades);
     fillSelect(els.fArea, areas);
 
-    state.filtered = [...rows];
     renderChips();
     render();
   }
@@ -276,7 +342,6 @@
     });
 
     els.btnFilters.addEventListener('click', () => {
-      // sincroniza selects com estado
       els.fUnidade.value = state.filters.unidade;
       els.fArea.value = state.filters.area;
       els.dialog.showModal();
@@ -290,7 +355,6 @@
     });
 
     els.dialog.addEventListener('close', () => {
-      // Se fechou por "Aplicar"
       if (els.dialog.returnValue === 'ok'){
         state.filters.unidade = els.fUnidade.value || 'Todos';
         state.filters.area = els.fArea.value || 'Todos';

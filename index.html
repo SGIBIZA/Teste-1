@@ -16,43 +16,48 @@
 <body>
   <!-- HEADER -->
   <header class="top">
-    <div class="top__inner">
+  <div class="top__inner">
 
-      <!-- LOGO ESQUERDA (GHT) -->
-      <div class="top__logos top__logos--left" aria-label="Logo GHT">
-        <img class="logo logo--ght" src="logo-ght.png" alt="GHT" onerror="this.style.display='none'">
-      </div>
-
-      <!-- CENTRO -->
-      <div class="top__titlewrap">
-        <h1 class="top__title">Catálogo de Iniciativas Inovadoras GHT</h1>
-        <p class="top__subtitle">Inspire-se e explore você também o universo da IA</p>
-
-        <div class="top__actions">
-          <label class="search">
-            <span class="search__icon">🔎</span>
-            <input id="q" type="search" placeholder="Pesquisar iniciativas, colaborador, área, filial..." />
-            <button id="clearQ" class="search__clear" type="button" title="Limpar">×</button>
-          </label>
-
-          <button id="btnFilters" class="btn btn--primary" type="button">
-            <span class="btn__icon">⛃</span> Filtros
-          </button>
-        </div>
-
-        <div class="top__meta">
-          <span id="countInfo" class="pill">Carregando...</span>
-          <span id="activeChips" class="chips"></span>
-        </div>
-      </div>
-
-      <!-- LOGO DIREITA (PROGRAMA) -->
-      <div class="top__logos top__logos--right" aria-label="Logo do Programa">
-        <img class="logo logo--prog" src="logo-programa.png" alt="Valores que movem atitudes" onerror="this.style.display='none'">
-      </div>
-
+    <!-- DESKTOP: LOGO ESQUERDA (GHT) -->
+    <div class="top__logos top__logos--left">
+      <img class="logo logo--ght" src="logo-ght.png" alt="GHT" onerror="this.style.display='none'">
     </div>
-  </header>
+
+    <!-- MOBILE: IMAGEM ÚNICA (GHT + Valores) -->
+    <div class="top__brand-mobile">
+      <img class="logo" src="logo-ght-e-valores.png" alt="GHT + Valores" onerror="this.style.display='none'">
+    </div>
+
+    <!-- CENTRO -->
+    <div class="top__titlewrap">
+      <h1 class="top__title">Catálogo de Iniciativas Inovadoras GHT</h1>
+      <p class="top__subtitle">Inspire-se e explore você também o universo da IA</p>
+
+      <div class="top__actions">
+        <label class="search">
+          <span class="search__icon">🔎</span>
+          <input id="q" type="search" placeholder="Pesquisar iniciativas, colaborador, área, filial..." />
+          <button id="clearQ" class="search__clear" type="button" title="Limpar">×</button>
+        </label>
+
+        <button id="btnFilters" class="btn btn--primary" type="button">
+          <span class="btn__icon">⛃</span> Filtros
+        </button>
+      </div>
+
+      <div class="top__meta">
+        <span id="countInfo" class="pill">Carregando...</span>
+        <span id="activeChips" class="chips"></span>
+      </div>
+    </div>
+
+    <!-- DESKTOP: LOGO DIREITA (VALORES) -->
+    <div class="top__logos top__logos--right">
+      <img class="logo logo--prog" src="logo-programa.png" alt="Valores que movem atitudes" onerror="this.style.display='none'">
+    </div>
+
+  </div>
+</header>
 
   <!-- CONTEÚDO -->
   <main class="wrap">
@@ -96,30 +101,43 @@
   </dialog>
 
   <!-- MODAL DE DETALHES -->
-  <dialog id="detailsDialog" class="dialog">
-    <form method="dialog" class="dialog__panel dialog__panel--wide">
-      <div class="dialog__head">
-        <h3 id="detailsTitle">Detalhes</h3>
-        <button class="iconbtn" value="cancel" aria-label="Fechar">×</button>
-      </div>
+<dialog id="detailsDialog" class="dialog">
+  <form method="dialog" class="dialog__panel dialog__panel--wide">
+    <div class="dialog__head">
+      <h3 id="detailsTitle">Detalhes</h3>
+      <button class="iconbtn" value="cancel" aria-label="Fechar">×</button>
+    </div>
 
-      <div class="dialog__body">
-        <div class="details">
-          <div class="details__meta">
-            <div><b>Colaborador:</b> <span id="dColab"></span></div>
-            <div><b>Área:</b> <span id="dArea"></span></div>
-            <div><b>Filial:</b> <span id="dUnidade"></span></div>
-            <div><b>Tema:</b> <span id="dTema"></span></div>
+    <div class="dialog__body">
+      <div class="details">
+        <div class="details__meta">
+          <div><b>Colaborador:</b> <span id="dColab"></span></div>
+          <div><b>Área:</b> <span id="dArea"></span></div>
+          <div><b>Filial:</b> <span id="dUnidade"></span></div>
+          <div><b>Tema:</b> <span id="dTema"></span></div>
+        </div>
+
+        <!-- VIEWER (aparece quando existir anexo) -->
+        <div id="dViewer" class="details__viewer hidden">
+          <div class="details__viewerbar">
+            <span id="dViewerLabel">Anexo</span>
+            <a id="dOpenNewTab" class="btn btn--primary" href="#" target="_blank" rel="noopener">Abrir em nova aba</a>
           </div>
 
-          <div class="details__text" id="dDesc"></div>
+          <iframe id="dFrame" class="details__frame hidden" title="Visualização do anexo"></iframe>
+          <img id="dImg" class="details__img hidden" alt="Anexo da iniciativa" />
         </div>
-      </div>
 
-      <div class="dialog__foot">
-        <button class="btn btn--primary" value="ok" type="submit">Fechar</button>
+        <!-- TEXTO (aparece quando NÃO existir anexo ou como complemento) -->
+        <div class="details__text" id="dDesc"></div>
       </div>
-    </form>
-  </dialog>
+    </div>
+
+    <div class="dialog__foot">
+      <button class="btn btn--primary" value="ok" type="submit">Fechar</button>
+    </div>
+  </form>
+</dialog>
+
 </body>
 </html>
