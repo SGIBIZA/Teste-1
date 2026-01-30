@@ -6,6 +6,7 @@
   <title>Catálogo de Iniciativas Inovadoras GHT</title>
 
   <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="logo-ght.png" type="image/png" />
 
   <!-- SheetJS (para ler .xlsx no navegador) -->
   <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -16,11 +17,13 @@
   <!-- HEADER -->
   <header class="top">
     <div class="top__inner">
-      <div class="top__logos">
-        <!-- Troque pelos seus arquivos reais (png/svg). Pode usar o logo GHT aqui. -->
+
+      <!-- LOGO ESQUERDA (GHT) -->
+      <div class="top__logos top__logos--left" aria-label="Logo GHT">
         <img class="logo logo--ght" src="logo-ght.png" alt="GHT" onerror="this.style.display='none'">
       </div>
 
+      <!-- CENTRO -->
       <div class="top__titlewrap">
         <h1 class="top__title">Catálogo de Iniciativas Inovadoras GHT</h1>
         <p class="top__subtitle">Inspire-se e explore você também o universo da IA</p>
@@ -43,10 +46,11 @@
         </div>
       </div>
 
-      <div class="top__logos top__logos--right">
-        <!-- Logo do programa (Valores que movem atitudes) -->
-        <img class="logo logo--programa" src="logo-programa.png" alt="Valores que movem atitudes" onerror="this.style.display='none'">
+      <!-- LOGO DIREITA (PROGRAMA) -->
+      <div class="top__logos top__logos--right" aria-label="Logo do Programa">
+        <img class="logo logo--prog" src="logo-programa.png" alt="Valores que movem atitudes" onerror="this.style.display='none'">
       </div>
+
     </div>
   </header>
 
