@@ -24,7 +24,7 @@
     dTema: $('#dTema'),
     dDesc: $('#dDesc'),
 
-    // viewer
+    // viewer (opcional no HTML)
     dViewer: $('#dViewer'),
     dViewerLabel: $('#dViewerLabel'),
     dOpenNewTab: $('#dOpenNewTab'),
@@ -42,16 +42,18 @@
   // ===== Utils =====
   const norm = (v) => (v ?? '').toString().trim();
   const normHeader = (h) => norm(h).replace(/\s+/g, ' ').replace(/\n/g, ' ').toLowerCase();
+  const pad3 = (n) => String(n).padStart(3, '0');
 
   const escapeHtml = (str) =>
     (str ?? '').toString()
-      .replaceAll('&','&amp;')
-      .replaceAll('<','&lt;')
-      .replaceAll('>','&gt;')
-      .replaceAll('"','&quot;')
-      .replaceAll("'","&#039;");
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
 
-  const pad3 = (n) => String(n).padStart(3, '0');
+  const show = (el) => el && el.classList.remove('hidden');
+  const hide = (el) => el && el.classList.add('hidden');
 
   function pickCol(row, candidates){
     for (const c of candidates) {
@@ -78,16 +80,10 @@
     return 'IA / Inovação';
   }
 
-  function isImage(url){
-    return /\.(png|jpg|jpeg|gif|webp|svg)(\?.*)?$/i.test(url);
-  }
-
-  function isPdf(url){
-    return /\.pdf(\?.*)?$/i.test(url);
-  }
+  function isImage(url){ return /\.(png|jpg|jpeg|gif|webp|svg)(\?.*)?$/i.test(url); }
+  function isPdf(url){ return /\.pdf(\?.*)?$/i.test(url); }
 
   function driveFileId(url){
-    // https://drive.google.com/file/d/FILE_ID/view?...
     const m = url.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
     return m ? m[1] : '';
   }
@@ -102,31 +98,22 @@
     if (!url) return { type: 'none', url: '' };
 
     const u = url.toLowerCase();
-
-    // Google Drive share -> preview
     if (u.includes('drive.google.com/file/d/')) {
-      // pode ser PDF ou imagem, mas o preview funciona pra ambos
-      return { type: 'iframe', url: toDrivePreviewUrl(url) , openUrl: url };
+      return { type: 'iframe', url: toDrivePreviewUrl(url), openUrl: url };
     }
-
     if (isPdf(url)) return { type: 'pdf', url };
     if (isImage(url)) return { type: 'image', url };
-
-    // qualquer outro link (site, sharepoint, etc)
     return { type: 'link', url };
   }
-
-  function show(el){ el.classList.remove('hidden'); }
-  function hide(el){ el.classList.add('hidden'); }
 
   function resetViewer(){
     hide(els.dViewer);
     hide(els.dFrame);
     hide(els.dImg);
-    els.dFrame.removeAttribute('src');
-    els.dImg.removeAttribute('src');
-    els.dOpenNewTab.setAttribute('href', '#');
-    els.dViewerLabel.textContent = 'Anexo';
+    if (els.dFrame) els.dFrame.removeAttribute('src');
+    if (els.dImg) els.dImg.removeAttribute('src');
+    if (els.dOpenNewTab) els.dOpenNewTab.setAttribute('href', '#');
+    if (els.dViewerLabel) els.dViewerLabel.textContent = 'Anexo';
   }
 
   // ===== Render =====
@@ -154,10 +141,11 @@
   }
 
   function cardEl(item){
-    const a = document.createElement('article');
-    a.className = 'card';
+    const card = document.createElement('article');
+    card.className = 'card';
 
-    a.innerHTML = `
+    // ✅ aqui removi a seta duplicada (tiramos o <span class="arrow">→</span>)
+    card.innerHTML = `
       <div class="card__id">Iniciativa #${pad3(item.id)}</div>
       <h3 class="card__title">${escapeHtml(item.titulo)}</h3>
       <p class="card__desc"><b>Descrição:</b> ${escapeHtml(item.descricao)}</p>
@@ -171,21 +159,23 @@
 
       <div class="card__actions">
         <a class="link" href="#" data-action="details">Ver detalhes →</a>
-        <span class="arrow">→</span>
       </div>
     `;
 
-    a.querySelector('[data-action="details"]').addEventListener('click', (e) => {
+    const detailsLink = card.querySelector('[data-action="details"]');
+
+    detailsLink.addEventListener('click', (e) => {
       e.preventDefault();
       openDetails(item);
     });
 
-    a.addEventListener('click', (e) => {
+    // clique no card abre também (exceto no link)
+    card.addEventListener('click', (e) => {
       if (e.target.closest('a')) return;
       openDetails(item);
     });
 
-    return a;
+    return card;
   }
 
   // ===== Details =====
@@ -197,32 +187,24 @@
     els.dArea.textContent = item.area || '-';
     els.dUnidade.textContent = item.unidade || '-';
     els.dTema.textContent = item.tema || 'IA / Inovação';
-
-    // texto sempre aparece (pode ser útil mesmo com anexo)
     els.dDesc.textContent = item.descricao || '-';
 
     const att = classifyAttachment(item.anexo);
 
-    if (att.type !== 'none'){
+    if (att.type !== 'none' && els.dViewer){
       show(els.dViewer);
-      els.dOpenNewTab.href = att.openUrl || att.url;
+      if (els.dOpenNewTab) els.dOpenNewTab.href = att.openUrl || att.url;
 
-      if (att.type === 'image'){
-        els.dViewerLabel.textContent = 'Imagem';
+      if (att.type === 'image' && els.dImg){
+        if (els.dViewerLabel) els.dViewerLabel.textContent = 'Imagem';
         show(els.dImg);
         els.dImg.src = att.url;
-      } else if (att.type === 'pdf'){
-        els.dViewerLabel.textContent = 'PDF';
-        show(els.dFrame);
-        els.dFrame.src = att.url;
-      } else if (att.type === 'iframe'){
-        els.dViewerLabel.textContent = 'Anexo (Drive)';
+      } else if ((att.type === 'pdf' || att.type === 'iframe') && els.dFrame){
+        if (els.dViewerLabel) els.dViewerLabel.textContent = att.type === 'pdf' ? 'PDF' : 'Anexo (Drive)';
         show(els.dFrame);
         els.dFrame.src = att.url;
       } else {
-        // link genérico: não dá pra garantir embed, então só oferece abrir em nova aba
-        els.dViewerLabel.textContent = 'Link';
-        // (mantém só a barra e o botão)
+        if (els.dViewerLabel) els.dViewerLabel.textContent = 'Link';
       }
     }
 
@@ -236,10 +218,8 @@
     state.filtered = state.rows.filter(r => {
       const okUnidade = state.filters.unidade === 'Todos' || r.unidade === state.filters.unidade;
       const okArea = state.filters.area === 'Todos' || r.area === state.filters.area;
-
       const hay = `${r.id} ${r.titulo} ${r.descricao} ${r.colaborador} ${r.area} ${r.unidade} ${r.tema}`.toLowerCase();
       const okQ = !q || hay.includes(q);
-
       return okUnidade && okArea && okQ;
     });
 
@@ -249,7 +229,6 @@
 
   function fillSelect(selectEl, values){
     selectEl.innerHTML = '';
-
     const optAll = document.createElement('option');
     optAll.value = 'Todos';
     optAll.textContent = 'Todos';
@@ -275,14 +254,12 @@
     const ws = wb.Sheets[wb.SheetNames[0]];
     const raw = XLSX.utils.sheet_to_json(ws, { defval: '' });
 
-    // normaliza headers
     const normalized = raw.map((row) => {
       const out = {};
       for (const k of Object.keys(row)) out[normHeader(k)] = row[k];
       return out;
     });
 
-    // variações de colunas aceitas
     const COL_COLAB = ['nome colaborador(a)', 'colaborador', 'nome', 'nome do colaborador'];
     const COL_UNIDADE = ['unidade', 'filial'];
     const COL_AREA = ['area', 'área', 'setor'];
@@ -293,32 +270,24 @@
     const COL_ANEXO = ['anexo', 'pdf', 'arquivo', 'link', 'detalhes', 'detalhes_url'];
 
     const rows = normalized.map((r, idx) => {
-      const colaborador = pickCol(r, COL_COLAB);
-      const unidade = pickCol(r, COL_UNIDADE);
-      const area = pickCol(r, COL_AREA);
       const descricao = pickCol(r, COL_DESC);
-      const anexo = pickCol(r, COL_ANEXO);
-
       return {
         id: idx + 1,
-        colaborador,
-        unidade,
-        area,
+        colaborador: pickCol(r, COL_COLAB),
+        unidade: pickCol(r, COL_UNIDADE),
+        area: pickCol(r, COL_AREA),
         titulo: makeTitleFromText(descricao),
         descricao: norm(descricao),
         tema: inferTema(descricao),
-        anexo: norm(anexo),
+        anexo: norm(pickCol(r, COL_ANEXO)),
       };
     });
 
     state.rows = rows;
     state.filtered = [...rows];
 
-    // Preenche selects
-    const unidades = [...new Set(rows.map(r => r.unidade).filter(Boolean))]
-      .sort((a,b)=>a.localeCompare(b,'pt-BR'));
-    const areas = [...new Set(rows.map(r => r.area).filter(Boolean))]
-      .sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    const unidades = [...new Set(rows.map(r => r.unidade).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    const areas = [...new Set(rows.map(r => r.area).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
 
     fillSelect(els.fUnidade, unidades);
     fillSelect(els.fArea, areas);

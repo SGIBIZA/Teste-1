@@ -52,12 +52,14 @@ body{
 .top__logos--left{justify-content:flex-start}
 .top__logos--right{justify-content:flex-end}
 
-.logo{
-  max-height:44px;
-  width:auto;
-  filter: drop-shadow(0 6px 16px rgba(0,0,0,.25));
+
+/* ===== LOGOS MAIORES APENAS NO DESKTOP ===== */
+@media (min-width: 821px){
+  .logo--ght{max-height:170px}
+  .logo--prog{max-height:100px}
 }
-.logo--prog{max-height:40px}
+
+
 
 /* IMAGEM ÚNICA (SÓ MOBILE) */
 .top__brand-mobile{
@@ -266,26 +268,40 @@ body{
   font-size:13px;
 }
 
-/* ===== DIALOG ===== */
-.dialog::backdrop{background: rgba(0,0,0,.55)}
+/* ===== DIALOG (corrige corte no desktop) ===== */
+.dialog::backdrop{ background: rgba(0,0,0,.55); }
+
 .dialog{
   border:0;
   padding:0;
-  width:min(720px, 92vw);
+  width: min(920px, 92vw);      /* tamanho bom no PC */
   border-radius:18px;
-  overflow:hidden;
   box-shadow:0 30px 80px rgba(0,0,0,.45);
+  overflow: hidden;
 }
-.dialog__panel{background:#fff}
-.dialog__panel--wide{width:min(920px, 92vw)}
+
+.dialog__panel{
+  background:#fff;
+  display:flex;
+  flex-direction:column;
+  max-height: 85vh;             /* <- aqui é a chave */
+}
+
+.dialog__panel--wide{
+  width: 100%;                  /* mantém dentro do dialog */
+}
+
 .dialog__head{
   display:flex;
   justify-content:space-between;
   align-items:center;
   padding:14px 16px;
   border-bottom:1px solid var(--border);
+  flex: 0 0 auto;
 }
-.dialog__head h3{margin:0; font-size:16px}
+
+.dialog__head h3{ margin:0; font-size:16px; }
+
 .iconbtn{
   border:0;
   background:transparent;
@@ -294,13 +310,20 @@ body{
   line-height:1;
   color:#333;
 }
-.dialog__body{padding:14px 16px}
+
+.dialog__body{
+  padding:14px 16px;
+  overflow:auto;                /* <- scroll interno */
+  flex: 1 1 auto;
+}
+
 .dialog__foot{
   padding:14px 16px;
   border-top:1px solid var(--border);
   display:flex;
   justify-content:flex-end;
   gap:10px;
+  flex: 0 0 auto;
 }
 
 .field{display:flex; flex-direction:column; gap:6px; margin:10px 0}
