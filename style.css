@@ -55,7 +55,7 @@ body{
 
 /* ===== LOGOS MAIORES APENAS NO DESKTOP ===== */
 @media (min-width: 821px){
-  .logo--ght{max-height:170px}
+  .logo--ght{max-height:200px}
   .logo--prog{max-height:100px}
 }
 
