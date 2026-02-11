@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <!--
+    Delícias da Luzinha — Cardápio
+    - Carrega produtos automaticamente via GitHub API (imagens na RAIZ)
+    - Filtros por categoria
+    - Botão WhatsApp com mensagem dinâmica do card
+  -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cardápio | Delícias da Luzinha</title>
+  <meta name="description" content="Escolha seu doce favorito no cardápio e peça pelo WhatsApp. Bolos, caseirinhos, cupcakes e sobremesas." />
+
+  <!-- Open Graph (mínimo) -->
+  <meta property="og:title" content="Cardápio | Delícias da Luzinha" />
+  <meta property="og:description" content="Escolha seu doce favorito e peça pelo WhatsApp." />
+  <meta property="og:type" content="website" />
+  <!-- Substituir pela sua imagem em raiz (ex: hero-bolos.jpg) -->
+  <meta property="og:image" content="hero-bolos.jpg" />
+
+  <link rel="icon" href="favicon.ico" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <!-- Header fixo (igual ao index) -->
+  <header class="site-header" id="top">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="Ir para o início">
+        <span class="brand-script">Delícias da Luzinha</span>
+      </a>
+
+      <button class="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="site-nav">
+        <span class="menu-toggle-lines" aria-hidden="true"></span>
+      </button>
+
+      <nav class="nav" id="site-nav" aria-label="Menu principal">
+        <a href="index.html" class="nav-link">Início</a>
+        <a href="cardapio.html" class="nav-link is-active">Cardápio</a>
+        <a href="index.html#sobre" class="nav-link">Sobre</a>
+        <a href="index.html#contato" class="nav-link">Contato</a>
+
+        <a class="nav-cta"
+           href="https://wa.me/5541997839715?text=Ol%C3%A1%20vim%20pelo%20site%20e%20gostaria%20de%20fazer%20um%20pedido."
+           target="_blank" rel="noopener">
+          WhatsApp
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Cabeçalho da página -->
+    <section class="page-hero">
+      <div class="container page-hero-inner">
+        <h1 class="page-title">Cardápio</h1>
+        <p class="page-subtitle">Escolha seu doce favorito e peça pelo WhatsApp.</p>
+
+        <!-- Filtros -->
+        <div class="filters" role="tablist" aria-label="Filtros do cardápio">
+          <button class="chip is-active" data-filter="TODOS" role="tab" aria-selected="true">TODOS</button>
+          <button class="chip" data-filter="BOLO" role="tab" aria-selected="false">BOLO</button>
+          <button class="chip" data-filter="CASEIRINHOS" role="tab" aria-selected="false">CASEIRINHOS</button>
+          <button class="chip" data-filter="CUPCAKES" role="tab" aria-selected="false">CUPCAKES</button>
+          <button class="chip" data-filter="SOBREMESAS" role="tab" aria-selected="false">SOBREMESAS</button>
+        </div>
+
+        <div class="notice" id="menuNotice" role="status" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- Grid de cards -->
+    <section class="section section-tight">
+      <div class="container">
+        <noscript>
+          <div class="notice notice-warn">
+            Para carregar o cardápio automaticamente, ative o JavaScript no seu navegador.
+          </div>
+        </noscript>
+
+        <div class="grid cards-grid" id="menuGrid" aria-live="polite">
+          <!-- Cards inseridos via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Prazos rápidos -->
+    <section class="section section-soft">
+      <div class="container">
+        <div class="card card-pad">
+          <h2 class="mini-title">Prazos &amp; Pedido</h2>
+          <ul class="bullets">
+            <li><strong>Pagamento:</strong> 50% na confirmação da encomenda e o restante na entrega</li>
+            <li><strong>Prazo mínimo:</strong> 48h para bolos recheados e sobremesas</li>
+            <li><strong>Bolos recheados:</strong> quantidade mínima 1,5 kg</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© <span id="year"></span> Delícias da Luzinha. Todos os direitos reservados.</p>
+      <a class="back-top" href="#top">Voltar ao topo</a>
+    </div>
+  </footer>
+
+  <script>
+    /**
+     * =========================================================
+     *  CONFIG — PREENCHA PARA ATIVAR O AUTO-CARDÁPIO
+     * =========================================================
+     */
+    const CONFIG = {
+      GITHUB_OWNER: "",   // ex: "seu-usuario"
+      GITHUB_REPO: "",    // ex: "delicias-da-luzinha"
+      GITHUB_BRANCH: "main"
+    };
+
+    const WHATSAPP_BASE = "https://wa.me/5541997839715?text=";
+
+    const CATEGORY_ORDER = ["BOLO", "SOBREMESAS", "CASEIRINHOS", "CUPCAKES"];
+    const ALLOWED_CATEGORIES = new Set(CATEGORY_ORDER);
+
+    const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+
+    let ALL_PRODUCTS = [];
+    let CURRENT_FILTER = "TODOS";
+
+    function setNotice(msg, type = "info") {
+      const el = document.getElementById("menuNotice");
+      if (!el) return;
+      el.className = "notice " + (type ? `notice-${type}` : "");
+      el.textContent = msg || "";
+      el.style.display = msg ? "block" : "none";
+    }
+
+    function parseFilenameToProduct(filename) {
+      // Esperado: "TIPO - NOME DO PRODUTO - VALOR.ext"
+      const nameNoExt = filename.replace(/\.(jpg|jpeg|png|webp)$/i, "");
+      const parts = nameNoExt.split(" - ").map(s => s.trim()).filter(Boolean);
+      if (parts.length < 3) return null;
+
+      const category = (parts[0] || "").toUpperCase();
+      const rawPrice = parts[parts.length - 1];
+      const middleName = parts.slice(1, -1).join(" - ").trim();
+
+      if (!ALLOWED_CATEGORIES.has(category)) return null;
+
+      const price = Number(String(rawPrice).replace(",", "."));
+      if (!Number.isFinite(price)) return null;
+      if (!middleName) return null;
+
+      return { category, name: middleName, price };
+    }
+
+    function sortProducts(list) {
+      return list.slice().sort((a, b) => {
+        const ca = CATEGORY_ORDER.indexOf(a.category);
+        const cb = CATEGORY_ORDER.indexOf(b.category);
+        if (ca !== cb) return ca - cb;
+        return a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
+      });
+    }
+
+    function makeWhatsAppLink(productName, priceBRL) {
+      const message = `Olá vim pelo site, e gostaria de pedir esse produto ${productName} - Valor ${priceBRL}`;
+      return WHATSAPP_BASE + encodeURIComponent(message);
+    }
+
+    function productCard(product) {
+      const priceText = brl.format(product.price);
+
+      const card = document.createElement("article");
+      card.className = "card product-card";
+
+      card.innerHTML = `
+        <div class="product-media">
+          <img src="${product.imageUrl}" alt="${product.name}" loading="lazy" />
+        </div>
+
+        <div class="product-body">
+          <div class="badge">${product.category}</div>
+          <h3 class="product-title">${product.name}</h3>
+          <p class="product-price">${priceText}</p>
+
+          <a class="btn btn-primary btn-full"
+             href="${makeWhatsAppLink(product.name, priceText)}"
+             target="_blank" rel="noopener">
+            Pedir no WhatsApp
+          </a>
+        </div>
+      `;
+      return card;
+    }
+
+    async function fetchGithubImages() {
+      const { GITHUB_OWNER: owner, GITHUB_REPO: repo, GITHUB_BRANCH: branch } = CONFIG;
+
+      if (!owner || !repo) {
+        setNotice("Configure GITHUB_OWNER e GITHUB_REPO no código para carregar o cardápio automaticamente.", "warn");
+        return [];
+      }
+
+      const endpoint = `https://api.github.com/repos/${owner}/${repo}/contents/?ref=${branch}`;
+
+      try {
+        setNotice("Carregando cardápio…", "info");
+        const res = await fetch(endpoint, { headers: { "Accept": "application/vnd.github+json" } });
+        if (!res.ok) throw new Error("GitHub API error: " + res.status);
+
+        const data = await res.json();
+        const images = (Array.isArray(data) ? data : []).filter(item => {
+          if (!item || item.type !== "file") return false;
+          return /\.(jpg|jpeg|png|webp)$/i.test(item.name || "");
+        });
+
+        const products = [];
+        for (const img of images) {
+          const parsed = parseFilenameToProduct(img.name || "");
+          if (!parsed) continue;
+
+          products.push({
+            ...parsed,
+            imageUrl: img.download_url
+          });
+        }
+
+        const sorted = sortProducts(products);
+
+        if (!sorted.length) {
+          setNotice("Nenhuma imagem válida encontrada. Use o padrão: TIPO - NOME DO PRODUTO - VALOR.jpg", "warn");
+        } else {
+          setNotice("", "");
+        }
+
+        return sorted;
+      } catch (err) {
+        console.error(err);
+        setNotice("Não foi possível carregar o cardápio agora. Configure GITHUB_OWNER e GITHUB_REPO e tente novamente.", "warn");
+        return [];
+      }
+    }
+
+    function renderMenu() {
+      const grid = document.getElementById("menuGrid");
+      if (!grid) return;
+
+      grid.innerHTML = "";
+
+      let list = ALL_PRODUCTS;
+      if (CURRENT_FILTER !== "TODOS") {
+        list = ALL_PRODUCTS.filter(p => p.category === CURRENT_FILTER);
+      }
+
+      if (!list.length) {
+        const empty = document.createElement("div");
+        empty.className = "notice notice-warn";
+        empty.textContent = "Nenhum item encontrado para esse filtro. Verifique as imagens na raiz do repositório.";
+        grid.appendChild(empty);
+        return;
+      }
+
+      for (const p of list) grid.appendChild(productCard(p));
+    }
+
+    function setupFilters() {
+      const chips = Array.from(document.querySelectorAll(".chip[data-filter]"));
+      if (!chips.length) return;
+
+      chips.forEach(chip => {
+        chip.addEventListener("click", () => {
+          const filter = chip.getAttribute("data-filter");
+          CURRENT_FILTER = filter || "TODOS";
+
+          chips.forEach(c => {
+            const isActive = c === chip;
+            c.classList.toggle("is-active", isActive);
+            c.setAttribute("aria-selected", String(isActive));
+          });
+
+          renderMenu();
+        });
+      });
+    }
+
+    // Header: scrolled state
+    function setupScrolledHeader() {
+      const header = document.querySelector(".site-header");
+      const onScroll = () => {
+        if (window.scrollY > 10) header.classList.add("scrolled");
+        else header.classList.remove("scrolled");
+      };
+      onScroll();
+      window.addEventListener("scroll", onScroll, { passive: true });
+    }
+
+    // Mobile menu
+    function setupMobileMenu() {
+      const btn = document.querySelector(".menu-toggle");
+      const nav = document.getElementById("site-nav");
+      if (!btn || !nav) return;
+
+      function closeMenu() {
+        nav.classList.remove("open");
+        btn.setAttribute("aria-expanded", "false");
+      }
+
+      btn.addEventListener("click", () => {
+        const isOpen = nav.classList.toggle("open");
+        btn.setAttribute("aria-expanded", String(isOpen));
+      });
+
+      nav.addEventListener("click", (e) => {
+        const a = e.target.closest("a");
+        if (a) closeMenu();
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeMenu();
+      });
+    }
+
+    async function init() {
+      document.getElementById("year").textContent = new Date().getFullYear();
+      setupScrolledHeader();
+      setupMobileMenu();
+      setupFilters();
+
+      ALL_PRODUCTS = await fetchGithubImages();
+      renderMenu();
+    }
+
+    init();
+  </script>
+</body>
+</html>

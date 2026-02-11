@@ -1,143 +1,447 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
+  <!--
+    Delícias da Luzinha — Home
+    - Mobile-first
+    - Sem frameworks
+    - Header fixo com blur + estado "scrolled"
+    - Preview do cardápio carregado automaticamente via GitHub API (imagens na RAIZ)
+  -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Catálogo de Iniciativas Inovadoras GHT</title>
+  <title>Delícias da Luzinha | Confeitaria Artesanal</title>
+  <meta name="description" content="Bolos, tortas e sobremesas artesanais feitos com carinho. Encomende pelo WhatsApp e receba com qualidade e cuidado." />
+
+  <!-- Open Graph (mínimo) -->
+  <meta property="og:title" content="Delícias da Luzinha | Confeitaria Artesanal" />
+  <meta property="og:description" content="Bolos e tortas artesanais feitos com carinho. Veja o cardápio e peça pelo WhatsApp." />
+  <meta property="og:type" content="website" />
+  <!-- Substituir pela sua imagem em raiz (ex: hero-bolos.jpg) -->
+  <meta property="og:image" content="hero-bolos.jpg" />
+
+  <!-- Favicon (placeholder na raiz) -->
+  <link rel="icon" href="favicon.ico" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="style.css" />
-  <link rel="icon" href="logo-ght.png" type="image/png" />
-
-  <!-- SheetJS (para ler .xlsx no navegador) -->
-  <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script defer src="script.js"></script>
 </head>
 
 <body>
-  <!-- HEADER -->
-  <header class="top">
-  <div class="top__inner">
+  <!-- Header fixo -->
+  <header class="site-header" id="top">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="Ir para o início">
+        <span class="brand-script">Delícias da Luzinha</span>
+      </a>
 
-    <!-- DESKTOP: LOGO ESQUERDA (GHT) -->
-    <div class="top__logos top__logos--left">
-      <img class="logo logo--ght" src="logo-ght.png" alt="GHT" onerror="this.style.display='none'">
+      <button class="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="site-nav">
+        <span class="menu-toggle-lines" aria-hidden="true"></span>
+      </button>
+
+      <nav class="nav" id="site-nav" aria-label="Menu principal">
+        <a href="index.html" class="nav-link is-active">Início</a>
+        <a href="cardapio.html" class="nav-link">Cardápio</a>
+        <a href="#sobre" class="nav-link js-scroll">Sobre</a>
+        <a href="#contato" class="nav-link js-scroll">Contato</a>
+
+        <a class="nav-cta"
+           href="https://wa.me/5541997839715?text=Ol%C3%A1%20vim%20pelo%20site%20e%20gostaria%20de%20fazer%20um%20pedido."
+           target="_blank" rel="noopener">
+          WhatsApp
+        </a>
+      </nav>
     </div>
+  </header>
 
-    <!-- MOBILE: IMAGEM ÚNICA (GHT + Valores) -->
-    <div class="top__brand-mobile">
-      <img class="logo" src="logo-ght-e-valores.png" alt="GHT + Valores" onerror="this.style.display='none'">
-    </div>
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="hero-eyebrow">Bem-vindo(a) à</p>
+          <h1 class="hero-title">Delícias da Luzinha</h1>
+          <p class="hero-subtitle">Bolos e tortas artesanais feitos com carinho.</p>
 
-    <!-- CENTRO -->
-    <div class="top__titlewrap">
-      <h1 class="top__title">Catálogo de Iniciativas Inovadoras GHT</h1>
-      <p class="top__subtitle">Inspire-se e explore você também o universo da IA</p>
-
-      <div class="top__actions">
-        <label class="search">
-          <span class="search__icon">🔎</span>
-          <input id="q" type="search" placeholder="Pesquisar iniciativas, colaborador, área, filial..." />
-          <button id="clearQ" class="search__clear" type="button" title="Limpar">×</button>
-        </label>
-
-        <button id="btnFilters" class="btn btn--primary" type="button">
-          <span class="btn__icon">⛃</span> Filtros
-        </button>
-      </div>
-
-      <div class="top__meta">
-        <span id="countInfo" class="pill">Carregando...</span>
-        <span id="activeChips" class="chips"></span>
-      </div>
-    </div>
-
-    <!-- DESKTOP: LOGO DIREITA (VALORES) -->
-    <div class="top__logos top__logos--right">
-      <img class="logo logo--prog" src="logo-programa.png" alt="Valores que movem atitudes" onerror="this.style.display='none'">
-    </div>
-
-  </div>
-</header>
-
-  <!-- CONTEÚDO -->
-  <main class="wrap">
-    <section id="grid" class="grid" aria-live="polite"></section>
-
-    <div id="empty" class="empty hidden">
-      <h2>Nenhum resultado</h2>
-      <p>Tente ajustar a pesquisa ou remover filtros.</p>
-    </div>
-  </main>
-
-  <footer class="footer">
-    © GHT – Inovação e Melhoria Contínua
-  </footer>
-
-  <!-- MODAL DE FILTROS -->
-  <dialog id="filtersDialog" class="dialog">
-    <form method="dialog" class="dialog__panel">
-      <div class="dialog__head">
-        <h3>Filtros</h3>
-        <button class="iconbtn" value="cancel" aria-label="Fechar">×</button>
-      </div>
-
-      <div class="dialog__body">
-        <div class="field">
-          <label for="fUnidade">Filial (Unidade)</label>
-          <select id="fUnidade"></select>
-        </div>
-
-        <div class="field">
-          <label for="fArea">Área</label>
-          <select id="fArea"></select>
-        </div>
-      </div>
-
-      <div class="dialog__foot">
-        <button id="clearFilters" class="btn" value="cancel" type="button">Limpar</button>
-        <button class="btn btn--primary" value="ok" type="submit">Aplicar</button>
-      </div>
-    </form>
-  </dialog>
-
-  <!-- MODAL DE DETALHES -->
-<dialog id="detailsDialog" class="dialog">
-  <form method="dialog" class="dialog__panel dialog__panel--wide">
-    <div class="dialog__head">
-      <h3 id="detailsTitle">Detalhes</h3>
-      <button class="iconbtn" value="cancel" aria-label="Fechar">×</button>
-    </div>
-
-    <div class="dialog__body">
-      <div class="details">
-        <div class="details__meta">
-          <div><b>Colaborador:</b> <span id="dColab"></span></div>
-          <div><b>Área:</b> <span id="dArea"></span></div>
-          <div><b>Filial:</b> <span id="dUnidade"></span></div>
-          <div><b>Tema:</b> <span id="dTema"></span></div>
-        </div>
-
-        <!-- VIEWER (aparece quando existir anexo) -->
-        <div id="dViewer" class="details__viewer hidden">
-          <div class="details__viewerbar">
-            <span id="dViewerLabel">Anexo</span>
-            <a id="dOpenNewTab" class="btn btn--primary" href="#" target="_blank" rel="noopener">Abrir em nova aba</a>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="cardapio.html">Ver Cardápio</a>
+            <a class="btn btn-ghost js-scroll" href="#cardapio-preview">Ver prévia</a>
           </div>
 
-          <iframe id="dFrame" class="details__frame hidden" title="Visualização do anexo"></iframe>
-          <img id="dImg" class="details__img hidden" alt="Anexo da iniciativa" />
+          <div class="hero-note">
+            <span class="dot"></span>
+            <span>Encomendas pelo WhatsApp • mínimo 48h para bolos recheados e sobremesas</span>
+          </div>
         </div>
 
-        <!-- TEXTO (aparece quando NÃO existir anexo ou como complemento) -->
-        <div class="details__text" id="dDesc"></div>
+        <div class="hero-media">
+          <!-- Substituir pela sua imagem (na RAIZ do repositório) -->
+          <img class="hero-img" src="hero-bolos.png" alt="Bolos e tortas artesanais" />
+          <p class="media-caption"><!-- Substituir hero-bolos.jpg pela sua imagem --> </p>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <div class="dialog__foot">
-      <button class="btn btn--primary" value="ok" type="submit">Fechar</button>
-    </div>
-  </form>
-</dialog>
+    <!-- Preview do Cardápio (6 itens) -->
+    <section class="section" id="cardapio-preview">
+      <div class="container">
+        <div class="section-head">
+          <h2 class="section-title">Nosso Cardápio</h2>
+          <p class="section-subtitle">Uma prévia das delícias — escolha seu doce e peça pelo WhatsApp.</p>
+        </div>
 
+        <div class="notice" id="menuNotice" role="status" aria-live="polite"></div>
+
+        <div class="grid cards-grid" id="previewGrid" aria-live="polite">
+          <!-- Cards inseridos via JS (GitHub API) -->
+        </div>
+
+        <div class="section-cta">
+          <a class="btn btn-secondary" href="cardapio.html">Cardápio completo</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sobre Nós -->
+    <section class="section section-soft" id="sobre">
+      <div class="container about-grid">
+        <div class="about-media card card-media">
+          <!-- Imagem opcional (coloque na raiz se quiser) -->
+          <img src="sobre.png" alt="Ingredientes e preparo artesanal" onerror="this.style.display='none'" />
+          <div class="card-media-fallback">
+            <p class="muted">Dica: adicione uma imagem <strong>sobre.jpg</strong> na raiz para aparecer aqui.</p>
+          </div>
+        </div>
+
+        <div class="about-copy">
+          <h2 class="section-title">Sobre Nós</h2>
+          <p class="lead">
+            A Delícias da Luzinha é uma confeitaria artesanal feita para celebrar momentos especiais —
+            com ingredientes frescos, receitas cuidadosas e aquele toque caseiro elegante que dá vontade de repetir.
+          </p>
+          <p class="muted">
+            Trabalhamos sob encomenda, priorizando qualidade, sabor e apresentação. Cada doce é preparado com carinho,
+            pensando em encantar desde a primeira fatia.
+          </p>
+          <a class="btn btn-primary"
+             href="https://wa.me/5541997839715?text=Ol%C3%A1%20vim%20pelo%20site%20e%20gostaria%20de%20fazer%20um%20pedido."
+             target="_blank" rel="noopener">
+            Falar no WhatsApp
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Prazos & Pedido -->
+    <section class="section" id="prazos">
+      <div class="container">
+        <div class="section-head">
+          <h2 class="section-title">Prazos &amp; Pedido</h2>
+          <p class="section-subtitle">Informações importantes antes de finalizar sua encomenda.</p>
+        </div>
+
+        <div class="card card-pad">
+          <ul class="bullets">
+            <li><strong>Pagamento:</strong> 50% na confirmação da encomenda e o restante na entrega</li>
+            <li><strong>Prazo:</strong> pedidos de bolos recheados e sobremesas com <strong>mínimo 48h</strong></li>
+            <li><strong>Quantidade mínima:</strong> bolos recheados a partir de <strong>1,5 kg</strong></li>
+            <li><strong>Como pedir:</strong> finalize pelo WhatsApp através do cardápio</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contato -->
+    <section class="section section-soft" id="contato">
+      <div class="container">
+        <div class="section-head">
+          <h2 class="section-title">Contato</h2>
+          <p class="section-subtitle">Peça pelo WhatsApp e combine detalhes com a gente.</p>
+        </div>
+
+        <div class="contact-grid">
+          <div class="card card-pad contact-card">
+            <div class="contact-row">
+              <div class="contact-icon" aria-hidden="true">☎</div>
+              <div>
+                <p class="contact-label">WhatsApp</p>
+                <a class="contact-link" href="https://wa.me/5541997839715" target="_blank" rel="noopener">
+                  (41) 99783-9715
+                </a>
+              </div>
+            </div>
+
+            <p class="muted contact-msg">
+              Mensagem pronta: <em>“Olá vim pelo site e gostaria de fazer um pedido.”</em>
+            </p>
+
+            <a class="btn btn-primary"
+               href="https://wa.me/5541997839715?text=Ol%C3%A1%20vim%20pelo%20site%20e%20gostaria%20de%20fazer%20um%20pedido."
+               target="_blank" rel="noopener">
+              Pedir no WhatsApp
+            </a>
+          </div>
+
+          <div class="card card-pad contact-aside">
+            <h3 class="mini-title">Atendimento</h3>
+            <p class="muted">
+              Envie a mensagem com o doce escolhido e, se for bolo recheado, informe o peso desejado
+              (mínimo 1,5 kg). Vamos confirmar disponibilidade e prazo.
+            </p>
+            <a class="btn btn-secondary" href="cardapio.html">Escolher no cardápio</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© <span id="year"></span> Delícias da Luzinha. Todos os direitos reservados.</p>
+      <a class="back-top js-scroll" href="#top">Voltar ao topo</a>
+    </div>
+  </footer>
+
+  <script>
+    /**
+     * =========================================================
+     *  CONFIG — PREENCHA PARA ATIVAR O AUTO-CARDÁPIO
+     *  - Coloque owner/repo do GitHub onde estão as imagens na RAIZ
+     *  - O branch padrão é "main"
+     * =========================================================
+     */
+    const CONFIG = {
+      GITHUB_OWNER: "",   // ex: "seu-usuario"
+      GITHUB_REPO: "",    // ex: "delicias-da-luzinha"
+      GITHUB_BRANCH: "main"
+    };
+
+    const WHATSAPP_BASE = "https://wa.me/5541997839715?text=";
+
+    const CATEGORY_ORDER = ["BOLO", "SOBREMESAS", "CASEIRINHOS", "CUPCAKES"];
+    const ALLOWED_CATEGORIES = new Set(CATEGORY_ORDER);
+
+    const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+
+    function setNotice(msg, type = "info") {
+      const el = document.getElementById("menuNotice");
+      if (!el) return;
+      el.className = "notice " + (type ? `notice-${type}` : "");
+      el.textContent = msg || "";
+      el.style.display = msg ? "block" : "none";
+    }
+
+    function parseFilenameToProduct(filename) {
+      // Esperado: "TIPO - NOME DO PRODUTO - VALOR.ext"
+      const nameNoExt = filename.replace(/\.(jpg|jpeg|png|webp)$/i, "");
+      const parts = nameNoExt.split(" - ").map(s => s.trim()).filter(Boolean);
+      if (parts.length < 3) return null;
+
+      const category = (parts[0] || "").toUpperCase();
+      const rawPrice = parts[parts.length - 1];
+      const middleName = parts.slice(1, -1).join(" - ").trim();
+
+      if (!ALLOWED_CATEGORIES.has(category)) return null;
+
+      const price = Number(String(rawPrice).replace(",", "."));
+      if (!Number.isFinite(price)) return null;
+
+      if (!middleName) return null;
+
+      return { category, name: middleName, price };
+    }
+
+    function sortProducts(list) {
+      return list.slice().sort((a, b) => {
+        const ca = CATEGORY_ORDER.indexOf(a.category);
+        const cb = CATEGORY_ORDER.indexOf(b.category);
+        if (ca !== cb) return ca - cb;
+        return a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
+      });
+    }
+
+    function makeWhatsAppLink(productName, priceBRL) {
+      const message = `Olá vim pelo site, e gostaria de pedir esse produto ${productName} - Valor ${priceBRL}`;
+      return WHATSAPP_BASE + encodeURIComponent(message);
+    }
+
+    function productCard(product) {
+      const priceText = brl.format(product.price);
+
+      const a = document.createElement("article");
+      a.className = "card product-card";
+
+      a.innerHTML = `
+        <div class="product-media">
+          <img src="${product.imageUrl}" alt="${product.name}" loading="lazy" />
+        </div>
+
+        <div class="product-body">
+          <div class="badge">${product.category}</div>
+          <h3 class="product-title">${product.name}</h3>
+          <p class="product-price">${priceText}</p>
+
+          <a class="btn btn-primary btn-full"
+             href="${makeWhatsAppLink(product.name, priceText)}"
+             target="_blank" rel="noopener">
+            Pedir no WhatsApp
+          </a>
+        </div>
+      `;
+      return a;
+    }
+
+    async function fetchGithubImages() {
+      const { GITHUB_OWNER: owner, GITHUB_REPO: repo, GITHUB_BRANCH: branch } = CONFIG;
+
+      if (!owner || !repo) {
+        setNotice("Configure GITHUB_OWNER e GITHUB_REPO no código para carregar o cardápio automaticamente.", "warn");
+        return [];
+      }
+
+      const endpoint = `https://api.github.com/repos/${owner}/${repo}/contents/?ref=${branch}`;
+
+      try {
+        setNotice("Carregando cardápio…", "info");
+        const res = await fetch(endpoint, { headers: { "Accept": "application/vnd.github+json" } });
+        if (!res.ok) throw new Error("GitHub API error: " + res.status);
+
+        const data = await res.json();
+        const images = (Array.isArray(data) ? data : []).filter(item => {
+          if (!item || item.type !== "file") return false;
+          return /\.(jpg|jpeg|png|webp)$/i.test(item.name || "");
+        });
+
+        const products = [];
+        for (const img of images) {
+          const parsed = parseFilenameToProduct(img.name || "");
+          if (!parsed) continue;
+
+          products.push({
+            ...parsed,
+            imageUrl: img.download_url // URL direta do arquivo
+          });
+        }
+
+        const sorted = sortProducts(products);
+
+        if (!sorted.length) {
+          setNotice("Nenhuma imagem válida encontrada. Use o padrão: TIPO - NOME DO PRODUTO - VALOR.jpg", "warn");
+        } else {
+          setNotice("", "");
+        }
+
+        return sorted;
+      } catch (err) {
+        console.error(err);
+        setNotice("Não foi possível carregar o cardápio agora. Configure GITHUB_OWNER e GITHUB_REPO e tente novamente.", "warn");
+        return [];
+      }
+    }
+
+    function pickPreview(products) {
+      // Preferir BOLO e SOBREMESAS (3 + 3 quando possível)
+      const bolos = products.filter(p => p.category === "BOLO");
+      const sobrem = products.filter(p => p.category === "SOBREMESAS");
+
+      const preview = [];
+      preview.push(...bolos.slice(0, 3));
+      preview.push(...sobrem.slice(0, 3));
+
+      // Completar até 6 com os primeiros que não foram usados
+      const used = new Set(preview.map(p => `${p.category}|${p.name}|${p.price}`));
+      for (const p of products) {
+        const key = `${p.category}|${p.name}|${p.price}`;
+        if (preview.length >= 6) break;
+        if (!used.has(key)) {
+          preview.push(p);
+          used.add(key);
+        }
+      }
+
+      return preview.slice(0, 6);
+    }
+
+    async function renderPreview() {
+      const grid = document.getElementById("previewGrid");
+      if (!grid) return;
+
+      grid.innerHTML = "";
+      const products = await fetchGithubImages();
+
+      if (!products.length) return;
+
+      const preview = pickPreview(products);
+      for (const p of preview) grid.appendChild(productCard(p));
+    }
+
+    // Header: scrolled state
+    function setupScrolledHeader() {
+      const header = document.querySelector(".site-header");
+      const onScroll = () => {
+        if (window.scrollY > 10) header.classList.add("scrolled");
+        else header.classList.remove("scrolled");
+      };
+      onScroll();
+      window.addEventListener("scroll", onScroll, { passive: true });
+    }
+
+    // Mobile menu
+    function setupMobileMenu() {
+      const btn = document.querySelector(".menu-toggle");
+      const nav = document.getElementById("site-nav");
+      if (!btn || !nav) return;
+
+      function closeMenu() {
+        nav.classList.remove("open");
+        btn.setAttribute("aria-expanded", "false");
+      }
+
+      btn.addEventListener("click", () => {
+        const isOpen = nav.classList.toggle("open");
+        btn.setAttribute("aria-expanded", String(isOpen));
+      });
+
+      // Fecha ao clicar em links
+      nav.addEventListener("click", (e) => {
+        const a = e.target.closest("a");
+        if (a) closeMenu();
+      });
+
+      // Fecha ao apertar ESC
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeMenu();
+      });
+    }
+
+    // Smooth scroll (somente âncoras na mesma página)
+    function setupSmoothScroll() {
+      document.querySelectorAll("a.js-scroll[href^='#']").forEach(link => {
+        link.addEventListener("click", (e) => {
+          const id = link.getAttribute("href");
+          const target = document.querySelector(id);
+          if (!target) return;
+
+          e.preventDefault();
+          const header = document.querySelector(".site-header");
+          const offset = (header?.offsetHeight || 0) + 10;
+
+          const top = target.getBoundingClientRect().top + window.scrollY - offset;
+          window.scrollTo({ top, behavior: "smooth" });
+        });
+      });
+    }
+
+    // Init
+    document.getElementById("year").textContent = new Date().getFullYear();
+    setupScrolledHeader();
+    setupMobileMenu();
+    setupSmoothScroll();
+    renderPreview();
+  </script>
 </body>
 </html>
