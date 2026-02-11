@@ -19,7 +19,8 @@
   <!-- Substituir pela sua imagem em raiz (ex: hero-bolos.jpg) -->
   <meta property="og:image" content="hero-bolos.jpg" />
 
-  <link rel="icon" href="favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+<link rel="icon" href="favicon.ico">
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -33,9 +34,11 @@
   <!-- Header fixo (igual ao index) -->
   <header class="site-header" id="top">
     <div class="container header-inner">
-      <a class="brand" href="index.html" aria-label="Ir para o início">
-        <span class="brand-script">Delícias da Luzinha</span>
-      </a>
+<a class="brand" href="index.html" aria-label="Ir para o início">
+  <img class="brand-logo" src="logo.png" alt="Logo Delícias da Luzinha">
+  <span class="brand-script">Delícias da Luzinha</span>
+</a>
+
 
       <button class="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="site-nav">
         <span class="menu-toggle-lines" aria-hidden="true"></span>
@@ -144,23 +147,65 @@
     }
 
     function parseFilenameToProduct(filename) {
-      // Esperado: "TIPO - NOME DO PRODUTO - VALOR.ext"
-      const nameNoExt = filename.replace(/\.(jpg|jpeg|png|webp)$/i, "");
-      const parts = nameNoExt.split(" - ").map(s => s.trim()).filter(Boolean);
-      if (parts.length < 3) return null;
+  // Remove extensão
+  const nameNoExt = filename.replace(/\.(jpg|jpeg|png|webp)$/i, "").trim();
+  if (!nameNoExt) return null;
 
-      const category = (parts[0] || "").toUpperCase();
-      const rawPrice = parts[parts.length - 1];
-      const middleName = parts.slice(1, -1).join(" - ").trim();
+  // Normaliza separadores (hífen normal, hífen longo, underscore)
+  const normalized = nameNoExt
+    .replace(/[–—_]+/g, "-")         // troca – — _ por -
+    .replace(/\s*-\s*/g, " - ")      // padroniza espaços ao redor do hífen
+    .replace(/\s+/g, " ")            // espaços duplicados
+    .trim();
 
-      if (!ALLOWED_CATEGORIES.has(category)) return null;
+  // Detecta categoria (em qualquer lugar do nome, não só no começo)
+  const upper = normalized.toUpperCase();
 
-      const price = Number(String(rawPrice).replace(",", "."));
-      if (!Number.isFinite(price)) return null;
-      if (!middleName) return null;
+  // Aliases (para aceitar singular/plural e variações)
+  const CATEGORY_ALIASES = [
+    { match: /\bBOLO(S)?\b/i, category: "BOLO" },
+    { match: /\bCASEIRINHO(S)?\b/i, category: "CASEIRINHOS" },
+    { match: /\bCASERINHO(S)?\b/i, category: "CASEIRINHOS" }, // caso alguém digite errado
+    { match: /\bCUPCAKE(S)?\b/i, category: "CUPCAKES" },
+    { match: /\bSOBREMESA(S)?\b/i, category: "SOBREMESAS" },
+  ];
 
-      return { category, name: middleName, price };
+  let category = null;
+  for (const rule of CATEGORY_ALIASES) {
+    if (rule.match.test(normalized)) {
+      category = rule.category;
+      break;
     }
+  }
+  if (!category) return null;
+
+  // Extrai o preço (pega o último número "forte" do nome)
+  // Aceita: "R$ 65,00", "65", "65,00", "65.00", "R$65", "R$ 65,00 kg"
+  const priceMatch = normalized.match(/(?:R\$\s*)?(\d{1,4}(?:[.,]\d{1,2})?)(?=\D*$)/i);
+  if (!priceMatch) return null;
+
+  const price = Number(priceMatch[1].replace(",", "."));
+  if (!Number.isFinite(price)) return null;
+
+  // Nome do produto: remove categoria, remove preço e restos tipo "R$", "kg"
+  let name = normalized;
+
+  // remove a palavra da categoria do começo (se existir)
+  name = name.replace(CATEGORY_ALIASES.find(r => r.category === category)?.match, "").trim();
+
+  // remove o preço do final e símbolos comuns
+  name = name
+    .replace(/(?:R\$\s*)?\d{1,4}(?:[.,]\d{1,2})?\s*(kg)?\s*$/i, "") // tira preço + kg no fim
+    .replace(/\bR\$\b/gi, "")
+    .replace(/\s*-\s*$/g, "") // remove hífen sobrando no final
+    .replace(/^\s*-\s*/g, "") // remove hífen sobrando no começo
+    .trim();
+
+  // Se sobrou muito curto, ignora
+  if (name.length < 3) return null;
+
+  return { category, name, price };
+}
 
     function sortProducts(list) {
       return list.slice().sort((a, b) => {
